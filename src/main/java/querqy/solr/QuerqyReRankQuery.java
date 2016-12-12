@@ -4,7 +4,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.search.RankQuery;
@@ -121,12 +120,18 @@ public class QuerqyReRankQuery extends RankQuery {
             this.rankWeight = reRankQuery.createWeight(searcher, true);
         }
 
+        @Override
+        public void extractTerms(Set<Term> terms) {
+            this.mainWeight.extractTerms(terms);
+            this.rankWeight.extractTerms(terms);
+        }
+
         public float getValueForNormalization() throws IOException {
             return mainWeight.getValueForNormalization() + rankWeight.getValueForNormalization();
         }
 
-        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
-            return mainWeight.scorer(context, acceptDocs);
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+            return mainWeight.scorer(context);
         }
 
         public void normalize(float norm, float topLevelBoost) {

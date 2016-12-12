@@ -161,10 +161,9 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
     /**
      * Tie parameter for combining pf, pf2 and pf3 phrase boostings into a dismax query. Defaults to the value
-     * of the {@link DisMaxParams.TIE} parameter
+     * of the {@link org.apache.solr.common.params.DisMaxParams.TIE} parameter
      */
     public static final String QPF_TIE = "qpf.tie";
-
 
 
     public static final float DEFAULT_GQF_VALUE = Float.MIN_VALUE;
@@ -363,30 +362,35 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       if (hasOptBoost) {
 
-         BooleanQuery bq = new BooleanQuery(true);
-         bq.add(mainQuery, Occur.MUST);
+          BooleanQuery.Builder builder = new BooleanQuery.Builder();
+
+          builder.setDisableCoord(true);
+
+          builder.add(mainQuery, Occur.MUST);
 
          if (boostQueries != null) {
             for (Query f : boostQueries) {
-               bq.add(f, BooleanClause.Occur.SHOULD);
+                builder.add(f, BooleanClause.Occur.SHOULD);
             }
          }
 
          if (boostFunctions != null) {
             for (Query f : boostFunctions) {
-               bq.add(f, BooleanClause.Occur.SHOULD);
+                builder.add(f, BooleanClause.Occur.SHOULD);
             }
          }
 
          if (phraseFieldQuery != null) {
-             bq.add(phraseFieldQuery, BooleanClause.Occur.SHOULD);
+             builder.add(phraseFieldQuery, BooleanClause.Occur.SHOULD);
          }
 
          if (hasQuerqyBoostQueries && !useReRankForBoostQueries) {
             for (Query q : querqyBoostQueries) {
-               bq.add(q, BooleanClause.Occur.SHOULD);
+                builder.add(q, BooleanClause.Occur.SHOULD);
             }
          }
+
+         BooleanQuery bq = builder.build();
 
          if (hasMultiplicativeBoosts) {
             if (multiplicativeBoosts.size() > 1) {
@@ -403,13 +407,14 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       if (useReRankForBoostQueries && hasQuerqyBoostQueries) {
 
-          final BooleanQuery boostBq = new BooleanQuery(true);
+          final BooleanQuery.Builder builder = new BooleanQuery.Builder();
 
+          builder.setDisableCoord(true);
           for (final Query q : querqyBoostQueries) {
-              boostBq.add(q, BooleanClause.Occur.SHOULD);
+              builder.add(q, BooleanClause.Occur.SHOULD);
           }
 
-          mainQuery = new QuerqyReRankQuery(mainQuery, boostBq, reRankNumDocs, 1.0);
+          mainQuery = new QuerqyReRankQuery(mainQuery, builder.build(), reRankNumDocs, 1.0);
       }
 
       return mainQuery;
@@ -438,8 +443,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
         List<Query> result = null;
 
         if (boostQueries != null && !boostQueries.isEmpty()) {
-
-
 
             result = new LinkedList<>();
 
@@ -617,10 +620,15 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                                     }
                                     default:
 
-                                        final BooleanQuery bq = new BooleanQuery(true);
+                                        final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+
+                                        builder.setDisableCoord(true);
+
                                         for (final Query nGramQuery : nGramQueries) {
-                                            bq.add(nGramQuery, Occur.SHOULD);
+                                            builder.add(nGramQuery, Occur.SHOULD);
                                         }
+
+                                        final BooleanQuery bq = builder.build();
                                         bq.setBoost(fieldParams.getBoost());
                                         disjuncts.add(bq);
                                 }
@@ -656,39 +664,40 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
         return false;
     }
 
-        /**
-         * @param query
-         */
-   public void applyMinShouldMatch(Query query) {
+   /**
+    * @param query
+    */
+   public Query applyMinShouldMatch(Query query) {
 
-      if (!(query instanceof BooleanQuery)) {
-         return;
-      }
+       if (!(query instanceof BooleanQuery)) {
+           return query;
+       }
 
-      BooleanQuery bq = (BooleanQuery) query;
-      BooleanClause[] clauses = bq.getClauses();
-      if (clauses.length < 2) {
-         return;
-      }
+       BooleanQuery bq = (BooleanQuery) query;
+       List<BooleanClause> clauses = bq.clauses();
+       if (clauses.size() < 2) {
+           return bq;
+       }
 
-      for (BooleanClause clause : clauses) {
-         if ((clause.getQuery() instanceof BooleanQuery) && (clause.getOccur() != Occur.MUST)) {
-            return; // seems to be a complex query with sub queries - do not
-                    // apply mm
-         }
-      }
+       for (BooleanClause clause : clauses) {
+           if ((clause.getQuery() instanceof BooleanQuery) && (clause.getOccur() != Occur.MUST)) {
+               return bq; // seems to be a complex query with sub queries - do not
+               // apply mm
+           }
+       }
 
-      SolrPluginUtils.setMinShouldMatch(bq, config.getMinShouldMatch());
+       return SolrPluginUtils.setMinShouldMatch(bq, config.getMinShouldMatch());
 
    }
 
-   public void applyFilterQueries(ExpandedQuery expandedQuery) throws SyntaxError {
+
+    public void applyFilterQueries(ExpandedQuery expandedQuery) throws SyntaxError {
 
       Collection<QuerqyQuery<?>> filterQueries = expandedQuery.getFilterQueries();
 
       if (filterQueries != null && !filterQueries.isEmpty()) {
           
-          List<Query> fqs = new LinkedList<Query>();
+          List<Query> fqs = new LinkedList<>();
           
           for (QuerqyQuery<?> qfq : filterQueries) {
           
@@ -721,10 +730,9 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       try {
 
-          Query query = builder.createQuery(expandedQuery.getUserQuery());
-          applyMinShouldMatch(query);
-
-          return wrapQuery(query);
+          return wrapQuery(
+                  applyMinShouldMatch(
+                          builder.createQuery(expandedQuery.getUserQuery())));
 
       } catch (IOException e) {
          throw new RuntimeException(e);
