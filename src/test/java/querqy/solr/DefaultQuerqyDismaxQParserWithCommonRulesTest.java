@@ -4,20 +4,20 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SolrTestCaseJ4.SuppressSSL
 public class DefaultQuerqyDismaxQParserWithCommonRulesTest extends SolrTestCaseJ4 {
 
-    public void index() throws Exception {
+    public static void index() throws Exception {
 
         assertU(adoc("id", "1", "f1", "a", "f2", "c"));
 
         assertU(adoc("id", "2", "f1", "a", "f2", "b", "f4", "d"));
         
         assertU(adoc("id", "3", "f1", "a", "f3", "c", "f4", "e"));
+        
+        assertU(adoc("id", "4", "f1", "m", "f2", "c"));
         
         assertU(adoc("id", "5", "f1", "m", "f2", "b", "f4", "d"));
         
@@ -36,22 +36,13 @@ public class DefaultQuerqyDismaxQParserWithCommonRulesTest extends SolrTestCaseJ
 
 
         assertU(commit());
-    }
+     }
 
-
-
-    @BeforeClass
-    public static void beforeTests() throws Exception {
+     @BeforeClass
+     public static void beforeTests() throws Exception {
         initCore("solrconfig-commonrules.xml", "schema.xml");
-    }
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        clearIndex();
         index();
-    }
+     }
 
     @Test
     public void testSolrFilterQuery() {
@@ -90,7 +81,7 @@ public class DefaultQuerqyDismaxQParserWithCommonRulesTest extends SolrTestCaseJ
 
         assertQ("Down rule failed",
               req,
-              "//result[@name='response' and @numFound='3']/doc[1]/str[@name='id'][text()='5']"
+              "//result[@name='response' and @numFound='4']/doc[1]/str[@name='id'][text()='5']"
         );
 
         req.close();
@@ -106,7 +97,7 @@ public class DefaultQuerqyDismaxQParserWithCommonRulesTest extends SolrTestCaseJ
 
           assertQ("Down rule failed",
                 req,
-                "//result[@name='response' and @numFound='3']/doc[1]/str[@name='id'][text()='6']",
+                "//result[@name='response' and @numFound='4']/doc[1]/str[@name='id'][not(text()='5')]",
                 "//lst[@name='explain']/str[@name='5'][not(contains(., '0.0 = (MATCH) max of'))]"
           );
 

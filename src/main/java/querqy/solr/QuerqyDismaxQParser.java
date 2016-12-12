@@ -31,7 +31,6 @@ import org.apache.solr.search.*;
 
 import org.apache.solr.util.SolrPluginUtils;
 
-import querqy.lucene.LuceneQueryUtil;
 import querqy.ComparableCharSequence;
 import querqy.lucene.rewrite.*;
 import querqy.lucene.rewrite.SearchFieldsAndBoosting.FieldBoostModel;
@@ -126,12 +125,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
     public static final String QBOOST_SIMILARITY_SCORE_OFF = "off";
 
     /**
-     * Tie parameter for combining pf, pf2 and pf3 phrase boostings into a dismax query. Defaults to the value
-     * of the {@link org.apache.solr.common.params.DisMaxParams.TIE} parameter
-     */
-    public static final String QPF_TIE = "qpf.tie";
-
-    /**
      * A possible value of QBOOST_SIMILARITY_SCORE: Just use the similarity as set in Solr when scoring Querqy boost queries.
      */
     public static final String QBOOST_SIMILARITY_SCORE_ON = "on";
@@ -166,6 +159,14 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
     public static final String QBOOST_FIELD_BOOST_DEFAULT = QBOOST_FIELD_BOOST_ON;
 
+    /**
+     * Tie parameter for combining pf, pf2 and pf3 phrase boostings into a dismax query. Defaults to the value
+     * of the {@link DisMaxParams.TIE} parameter
+     */
+    public static final String QPF_TIE = "qpf.tie";
+
+
+
     public static final float DEFAULT_GQF_VALUE = Float.MIN_VALUE;
 
     static final String MATCH_ALL = "*:*";
@@ -196,7 +197,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
     protected final boolean useReRankForBoostQueries;
     protected final int reRankNumDocs;
     protected final TermQueryCache termQueryCache;
-
     protected final float qpfTie;
 
     public QuerqyDismaxQParser(String qstr, SolrParams localParams, SolrParams params,
@@ -247,6 +247,7 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
             reRankNumDocs = 0;
         }
 
+     
         final SearchFieldsAndBoosting searchFieldsAndBoosting =
               new SearchFieldsAndBoosting(getFieldBoostModelFromParam(solrParams), 
                       userQueryFields, generatedQueryFields, config.generatedFieldBoostFactor);
@@ -362,35 +363,30 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       if (hasOptBoost) {
 
-          BooleanQuery.Builder builder = new BooleanQuery.Builder();
-
-          builder.setDisableCoord(true);
-
-          builder.add(mainQuery, Occur.MUST);
+         BooleanQuery bq = new BooleanQuery(true);
+         bq.add(mainQuery, Occur.MUST);
 
          if (boostQueries != null) {
             for (Query f : boostQueries) {
-                builder.add(f, BooleanClause.Occur.SHOULD);
+               bq.add(f, BooleanClause.Occur.SHOULD);
             }
          }
 
          if (boostFunctions != null) {
             for (Query f : boostFunctions) {
-                builder.add(f, BooleanClause.Occur.SHOULD);
+               bq.add(f, BooleanClause.Occur.SHOULD);
             }
          }
 
          if (phraseFieldQuery != null) {
-             builder.add(phraseFieldQuery, BooleanClause.Occur.SHOULD);
+             bq.add(phraseFieldQuery, BooleanClause.Occur.SHOULD);
          }
 
          if (hasQuerqyBoostQueries && !useReRankForBoostQueries) {
             for (Query q : querqyBoostQueries) {
-                builder.add(q, BooleanClause.Occur.SHOULD);
+               bq.add(q, BooleanClause.Occur.SHOULD);
             }
          }
-
-         BooleanQuery bq = builder.build();
 
          if (hasMultiplicativeBoosts) {
             if (multiplicativeBoosts.size() > 1) {
@@ -407,14 +403,13 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       if (useReRankForBoostQueries && hasQuerqyBoostQueries) {
 
-          final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+          final BooleanQuery boostBq = new BooleanQuery(true);
 
-          builder.setDisableCoord(true);
           for (final Query q : querqyBoostQueries) {
-              builder.add(q, BooleanClause.Occur.SHOULD);
+              boostBq.add(q, BooleanClause.Occur.SHOULD);
           }
 
-          mainQuery = new QuerqyReRankQuery(mainQuery, builder.build(), reRankNumDocs, 1.0);
+          mainQuery = new QuerqyReRankQuery(mainQuery, boostBq, reRankNumDocs, 1.0);
       }
 
       return mainQuery;
@@ -444,6 +439,8 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
         if (boostQueries != null && !boostQueries.isEmpty()) {
 
+
+
             result = new LinkedList<>();
 
             for (BoostQuery bq : boostQueries) {
@@ -455,6 +452,7 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
                     QParser bqp = QParser.getParser(((RawQuery) boostQuery).getQueryString(), null, req);
                     luceneQuery = bqp.getQuery();
+                    luceneQuery.setBoost(bq.getBoost() * factor);
 
                 } else if (boostQuery instanceof querqy.model.Query) {
 
@@ -462,10 +460,11 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                             new LuceneQueryBuilder(boostDftcp, queryAnalyzer,
                                     boostSearchFieldsAndBoostings,
                                     config.getTieBreaker(), termQueryCache);
+
                     try {
 
                         luceneQuery = luceneQueryBuilder.createQuery((querqy.model.Query) boostQuery, factor < 0f);
-
+                        luceneQuery.setBoost(bq.getBoost() * factor);
                         if (luceneQuery != null) {
                             luceneQuery = wrapQuery(luceneQuery);
                         }
@@ -477,14 +476,7 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                 }
 
                 if (luceneQuery != null) {
-                    final float boost = bq.getBoost() * factor;
-                    if (boost != 1f) {
-                        result.add(new org.apache.lucene.search.BoostQuery(luceneQuery, boost));
-                    } else {
-                        result.add(luceneQuery);
-
-                    }
-
+                    result.add(luceneQuery);
                 }
 
             }
@@ -582,7 +574,8 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                                 }
                                 final Query pq = queryBuilder.createPhraseQuery(fieldname, pf, slop);
                                 if (pq != null) {
-                                    disjuncts.add(LuceneQueryUtil.boost(pq, fieldParams.getBoost()));
+                                    pq.setBoost(fieldParams.getBoost());
+                                    disjuncts.add(pq);
                                 }
 
                             } else if (n <= sequence.size()) {
@@ -617,21 +610,19 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                                     case 1: {
 
                                         final Query nGramQuery = nGramQueries.get(0);
-                                        disjuncts.add(LuceneQueryUtil.boost(nGramQuery, fieldParams.getBoost()));
+                                        nGramQuery.setBoost(fieldParams.getBoost());
+                                        disjuncts.add(nGramQuery);
                                         break;
 
                                     }
                                     default:
 
-                                        final BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                                        builder.setDisableCoord(true);
-
+                                        final BooleanQuery bq = new BooleanQuery(true);
                                         for (final Query nGramQuery : nGramQueries) {
-                                            builder.add(nGramQuery, Occur.SHOULD);
+                                            bq.add(nGramQuery, Occur.SHOULD);
                                         }
-
-                                        final BooleanQuery bq = builder.build();
-                                        disjuncts.add(LuceneQueryUtil.boost(bq, fieldParams.getBoost()));
+                                        bq.setBoost(fieldParams.getBoost());
+                                        disjuncts.add(bq);
                                 }
                             }
                         }
@@ -665,40 +656,39 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
         return false;
     }
 
-   /**
-    * @param query
-    */
-   public Query applyMinShouldMatch(Query query) {
+        /**
+         * @param query
+         */
+   public void applyMinShouldMatch(Query query) {
 
-       if (!(query instanceof BooleanQuery)) {
-           return query;
-       }
+      if (!(query instanceof BooleanQuery)) {
+         return;
+      }
 
-       BooleanQuery bq = (BooleanQuery) query;
-       List<BooleanClause> clauses = bq.clauses();
-       if (clauses.size() < 2) {
-           return bq;
-       }
+      BooleanQuery bq = (BooleanQuery) query;
+      BooleanClause[] clauses = bq.getClauses();
+      if (clauses.length < 2) {
+         return;
+      }
 
-       for (BooleanClause clause : clauses) {
-           if ((clause.getQuery() instanceof BooleanQuery) && (clause.getOccur() != Occur.MUST)) {
-               return bq; // seems to be a complex query with sub queries - do not
-               // apply mm
-           }
-       }
+      for (BooleanClause clause : clauses) {
+         if ((clause.getQuery() instanceof BooleanQuery) && (clause.getOccur() != Occur.MUST)) {
+            return; // seems to be a complex query with sub queries - do not
+                    // apply mm
+         }
+      }
 
-       return SolrPluginUtils.setMinShouldMatch(bq, config.getMinShouldMatch());
+      SolrPluginUtils.setMinShouldMatch(bq, config.getMinShouldMatch());
 
    }
 
-
-    public void applyFilterQueries(ExpandedQuery expandedQuery) throws SyntaxError {
+   public void applyFilterQueries(ExpandedQuery expandedQuery) throws SyntaxError {
 
       Collection<QuerqyQuery<?>> filterQueries = expandedQuery.getFilterQueries();
 
       if (filterQueries != null && !filterQueries.isEmpty()) {
           
-          List<Query> fqs = new LinkedList<>();
+          List<Query> fqs = new LinkedList<Query>();
           
           for (QuerqyQuery<?> qfq : filterQueries) {
           
@@ -731,9 +721,10 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
       try {
 
-          return wrapQuery(
-                  applyMinShouldMatch(
-                          builder.createQuery(expandedQuery.getUserQuery())));
+          Query query = builder.createQuery(expandedQuery.getUserQuery());
+          applyMinShouldMatch(query);
+
+          return wrapQuery(query);
 
       } catch (IOException e) {
          throw new RuntimeException(e);
@@ -878,6 +869,7 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
       public String getMinShouldMatch() {
          return minShouldMatch;
       }
+
 
    }
 

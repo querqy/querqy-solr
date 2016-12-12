@@ -71,7 +71,7 @@ public abstract class AbstractQuerqyDismaxQParserPlugin extends QParserPlugin im
             throw new IOException("Configuration property " + CONF_CACHE_NAME + " required if " + CONF_CACHE_UPDATE + " is set");
         }
 
-        ignoreTermQueryCacheUpdates = (updateCache != null) && !updateCache;
+        ignoreTermQueryCacheUpdates = (updateCache != null) ? !updateCache : false;
         
         this.querqyParserFactory = factory;
     }

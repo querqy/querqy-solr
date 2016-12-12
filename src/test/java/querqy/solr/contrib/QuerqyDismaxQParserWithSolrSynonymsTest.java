@@ -12,7 +12,6 @@ import querqy.parser.WhiteSpaceQuerqyParser;
 import querqy.rewrite.RewriteChain;
 import querqy.solr.QuerqyDismaxQParser;
 
-@SolrTestCaseJ4.SuppressSSL
 public class QuerqyDismaxQParserWithSolrSynonymsTest extends SolrTestCaseJ4 {
 
 
@@ -32,6 +31,9 @@ public class QuerqyDismaxQParserWithSolrSynonymsTest extends SolrTestCaseJ4 {
       index();
    }
 
+
+
+
    @Test
    public void testThatPFWorksWithSynonymRewriting() throws Exception {
 
@@ -43,7 +45,7 @@ public class QuerqyDismaxQParserWithSolrSynonymsTest extends SolrTestCaseJ4 {
 
       assertQ("ps with synonyms not working",
             req,
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f1:\"a b\")^0.5')]");
+            "//str[@name='parsedquery'][contains(.,'f1:\"a b\"^0.5')]");
 
       req.close();
 
@@ -80,7 +82,7 @@ public class QuerqyDismaxQParserWithSolrSynonymsTest extends SolrTestCaseJ4 {
       assertQ(QuerqyDismaxQParser.GFB + " not working",
             req,
             "//str[@name='parsedquery'][contains(.,'f1:a^2.0 | f1:x^1.6')]",
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f1:\"a b\")^0.5')]");
+            "//str[@name='parsedquery'][contains(.,'f1:\"a b\"^0.5')]");
 
       req.close();
    }

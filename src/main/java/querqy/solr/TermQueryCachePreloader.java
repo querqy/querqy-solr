@@ -7,9 +7,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.solr.core.AbstractSolrEventListener;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrCache;
@@ -47,7 +50,7 @@ public class TermQueryCachePreloader extends AbstractSolrEventListener {
     }
     
     protected Map<String, Float> getPreloadFields() {
-        // REVISIT: we don't need the boost factors as they could be overridden per request
+        // REVISIT: we don't need the boost factors as could will be overridden per request
        String fieldConf = (String) getArgs().get(CONF_PRELOAD_FIELDS); 
        return QuerqyDismaxQParser.parseFieldBoosts(fieldConf, 1f);
     }
@@ -106,7 +109,7 @@ public class TermQueryCachePreloader extends AbstractSolrEventListener {
             List<RewriterFactory> factories = rewriteChain.getRewriterFactories();
             if (!factories.isEmpty()) {
             
-                TermSubQueryBuilder termSubQueryBuilder = new TermSubQueryBuilder(newSearcher.getSchema().getQueryAnalyzer(), cache);
+                TermSubQueryBuilder termSubQueryBuilder = new TermSubQueryBuilder(newSearcher.getSchema().getQueryAnalyzer(), cache);//new PrelaodTermSubQueryBuilder(newSearcher.getSchema().getQueryAnalyzer(), cache);
                 for (RewriterFactory factory : factories) {
                     for (Term term: factory.getGenerableTerms()) {
                         String field = term.getField();
@@ -138,7 +141,7 @@ public class TermQueryCachePreloader extends AbstractSolrEventListener {
         
         try {
             
-            // luceneQueryBuilder.termToFactory creates the query and caches it (without the boost)
+            // luceneQueryBuilder.termToFactory creates the query factory and caches it (without the boost)
             TermSubQueryFactory termSubQueryFactory = termSubQueryBuilder.termToFactory(field, term, ConstantFieldBoost.NORM_BOOST);
             
             // test the query for hits and override the cache value with a factory that creates a query that never matches
@@ -146,7 +149,7 @@ public class TermQueryCachePreloader extends AbstractSolrEventListener {
             
             // no need to re-test for hits if we've seen this term before
             if (testForHits && (termSubQueryFactory != null) && (!termSubQueryFactory.isNeverMatchQuery())) {
-                Query query = termSubQueryFactory.createQuery(ConstantFieldBoost.NORM_BOOST, 0.01f, null);
+                Query query = termSubQueryFactory.createQuery(ConstantFieldBoost.NORM_BOOST, 0.01f, null/*new StandardDocumentFrequencyAndTermContextProvider()*/, false);
                 TopDocs topDocs = searcher.search(query, 1);
                 if (topDocs.totalHits < 1) {
                     cache.put(new CacheKey(field, term), new TermQueryCacheValue(NeverMatchQueryFactory.FACTORY, PRMSQuery.NEVER_MATCH_PRMS_QUERY));

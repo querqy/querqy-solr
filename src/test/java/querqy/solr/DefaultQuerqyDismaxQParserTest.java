@@ -7,17 +7,15 @@ import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.WrappedQuery;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import querqy.parser.WhiteSpaceQuerqyParser;
 import querqy.rewrite.RewriteChain;
 
-@SolrTestCaseJ4.SuppressSSL
 public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
 
-   public void index() throws Exception {
+   public static void index() throws Exception {
 
       assertU(adoc("id", "1", "f1", "a"));
       assertU(adoc("id", "2", "f1", "a"));
@@ -32,13 +30,6 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
     @BeforeClass
     public static void beforeTests() throws Exception {
         initCore("solrconfig-DefaultQuerqyDismaxQParserTest.xml", "schema.xml");
-    }
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        clearIndex();
         index();
     }
    
@@ -168,8 +159,8 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
         // f4 doesn't exist
         assertQ("wrong ps",
             req,
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f3:\"a b c d\")^2.0')]",
-            "//str[@name='parsedquery'][not(contains(.,'PhraseQuery(f40:\"a b c d\")^0.5'))]");
+            "//str[@name='parsedquery'][contains(.,'f3:\"a b c d\"^2.0')]",
+            "//str[@name='parsedquery'][not(contains(.,'f40:\"a b c d\"^0.5'))]");
 
         req.close();
 
@@ -214,10 +205,10 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
       // f_no_tfp / f_no_tp don't have term positions
       assertQ("wrong ps2",
             req,
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f1:\"a b c d\")^1.2')]",
-            "//str[@name='parsedquery'][not(contains(.,'PhraseQuery(str:\"a b c d\")^2.0'))]",
-            "//str[@name='parsedquery'][not(contains(.,'PhraseQuery(f_no_tfp:\"a b c d\")^0.5'))]",
-            "//str[@name='parsedquery'][not(contains(.,'PhraseQuery(f_no_tp:\"a b c d\")^0.5'))]");
+            "//str[@name='parsedquery'][contains(.,'f1:\"a b c d\"^1.2')]",
+            "//str[@name='parsedquery'][not(contains(.,'str:\"a b c d\"^2.0'))]",
+            "//str[@name='parsedquery'][not(contains(.,'f_no_tfp:\"a b c d\"^0.5'))]",
+            "//str[@name='parsedquery'][not(contains(.,'f_no_tp:\"a b c d\"^0.5'))]");
 
       req.close();
 
@@ -408,7 +399,7 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
             );
 
       verifyQueryString(req, q,
-            "(f2:\"a b d e f\")^1.5", "(f3:\"a b d e f\")^1.5",
+            "f2:\"a b d e f\"^1.5", "f3:\"a b d e f\"^1.5",
             "(f1:\"a b\" f1:\"b d\" f1:\"d e\" f1:\"e f\")^2.1",
             "(f2:\"a b\" f2:\"b d\" f2:\"d e\" f2:\"e f\")^2.1",
             "(f3:\"a b d\" f3:\"b d e\" f3:\"d e f\")^3.9",
@@ -429,7 +420,7 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
 
       assertQ("ps with synonyms not working",
             req,
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f1:\"a b\")^0.5')]");
+            "//str[@name='parsedquery'][contains(.,'f1:\"a b\"^0.5')]");
 
       req.close();
 
@@ -466,7 +457,7 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
       assertQ(QuerqyDismaxQParser.GFB + " not working",
             req,
             "//str[@name='parsedquery'][contains(.,'f1:a^2.0 | f1:x^1.6')]",
-            "//str[@name='parsedquery'][contains(.,'PhraseQuery(f1:\"a b\")^0.5')]");
+            "//str[@name='parsedquery'][contains(.,'f1:\"a b\"^0.5')]");
 
       req.close();
    }
@@ -514,7 +505,7 @@ public class DefaultQuerqyDismaxQParserTest extends SolrTestCaseJ4 {
       BooleanQuery bq = (BooleanQuery) query;
       String qStr = bq.toString();
       for (String exp : expectedSubstrings) {
-         assertTrue("Missing: " + exp + " in " + bq, qStr.indexOf(exp) > -1);
+         assertTrue("Missing: " + exp, qStr.indexOf(exp) > -1);
       }
 
    }

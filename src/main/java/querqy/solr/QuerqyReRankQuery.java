@@ -4,10 +4,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.MergeStrategy;
-import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.ReRankQParserPlugin;
+import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
 import java.util.Set;
@@ -35,7 +37,7 @@ public class QuerqyReRankQuery extends RankQuery {
     }
 
     @Override
-    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+    public TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd, IndexSearcher searcher) throws IOException {
         return new ReRankCollector(reRankNumDocs, len, reRankQuery, reRankWeight, cmd, searcher);
     }
 
@@ -55,6 +57,9 @@ public class QuerqyReRankQuery extends RankQuery {
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
+        if (getBoost() != 1f) {
+            return super.rewrite(reader);
+        }
         Query m = mainQuery.rewrite(reader);
         Query r = reRankQuery.rewrite(reader);
 
@@ -116,18 +121,12 @@ public class QuerqyReRankQuery extends RankQuery {
             this.rankWeight = reRankQuery.createWeight(searcher, true);
         }
 
-        @Override
-        public void extractTerms(Set<Term> terms) {
-            this.mainWeight.extractTerms(terms);
-            this.rankWeight.extractTerms(terms);
-        }
-
         public float getValueForNormalization() throws IOException {
             return mainWeight.getValueForNormalization() + rankWeight.getValueForNormalization();
         }
 
-        public Scorer scorer(LeafReaderContext context) throws IOException {
-            return mainWeight.scorer(context);
+        public Scorer scorer(LeafReaderContext context, Bits acceptDocs) throws IOException {
+            return mainWeight.scorer(context, acceptDocs);
         }
 
         public void normalize(float norm, float topLevelBoost) {
@@ -163,7 +162,7 @@ public class QuerqyReRankQuery extends RankQuery {
                                int length,
                                Query reRankQuery,
                                double reRankWeight,
-                               QueryCommand cmd,
+                               SolrIndexSearcher.QueryCommand cmd,
                                IndexSearcher searcher) throws IOException {
 
             super(null);
