@@ -125,6 +125,12 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
     public static final String QBOOST_SIMILARITY_SCORE_OFF = "off";
 
     /**
+     * Tie parameter for combining pf, pf2 and pf3 phrase boostings into a dismax query. Defaults to the value
+     * of the {@link org.apache.solr.common.params.DisMaxParams.TIE} parameter
+     */
+    public static final String QPF_TIE = "qpf.tie";
+
+    /**
      * A possible value of QBOOST_SIMILARITY_SCORE: Just use the similarity as set in Solr when scoring Querqy boost queries.
      */
     public static final String QBOOST_SIMILARITY_SCORE_ON = "on";
@@ -159,13 +165,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
     public static final String QBOOST_FIELD_BOOST_DEFAULT = QBOOST_FIELD_BOOST_ON;
 
-    /**
-     * Tie parameter for combining pf, pf2 and pf3 phrase boostings into a dismax query. Defaults to the value
-     * of the {@link org.apache.solr.common.params.DisMaxParams.TIE} parameter
-     */
-    public static final String QPF_TIE = "qpf.tie";
-
-
     public static final float DEFAULT_GQF_VALUE = Float.MIN_VALUE;
 
     static final String MATCH_ALL = "*:*";
@@ -196,6 +195,7 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
     protected final boolean useReRankForBoostQueries;
     protected final int reRankNumDocs;
     protected final TermQueryCache termQueryCache;
+
     protected final float qpfTie;
 
     public QuerqyDismaxQParser(String qstr, SolrParams localParams, SolrParams params,
@@ -246,7 +246,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
             reRankNumDocs = 0;
         }
 
-     
         final SearchFieldsAndBoosting searchFieldsAndBoosting =
               new SearchFieldsAndBoosting(getFieldBoostModelFromParam(solrParams), 
                       userQueryFields, generatedQueryFields, config.generatedFieldBoostFactor);
@@ -455,7 +454,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
 
                     QParser bqp = QParser.getParser(((RawQuery) boostQuery).getQueryString(), null, req);
                     luceneQuery = bqp.getQuery();
-                    luceneQuery.setBoost(bq.getBoost() * factor);
 
                 } else if (boostQuery instanceof querqy.model.Query) {
 
@@ -463,11 +461,10 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                             new LuceneQueryBuilder(boostDftcp, queryAnalyzer,
                                     boostSearchFieldsAndBoostings,
                                     config.getTieBreaker(), termQueryCache);
-
                     try {
 
                         luceneQuery = luceneQueryBuilder.createQuery((querqy.model.Query) boostQuery, factor < 0f);
-                        luceneQuery.setBoost(bq.getBoost() * factor);
+
                         if (luceneQuery != null) {
                             luceneQuery = wrapQuery(luceneQuery);
                         }
@@ -479,7 +476,13 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
                 }
 
                 if (luceneQuery != null) {
-                    result.add(luceneQuery);
+                    final float boost = bq.getBoost() * factor;
+                    if (boost != 1f) {
+                        result.add(new org.apache.lucene.search.BoostQuery(luceneQuery, boost));
+                    } else {
+                        result.add(luceneQuery);
+                    }
+
                 }
 
             }
@@ -877,7 +880,6 @@ public class QuerqyDismaxQParser extends ExtendedDismaxQParser {
       public String getMinShouldMatch() {
          return minShouldMatch;
       }
-
 
    }
 
