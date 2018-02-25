@@ -13,6 +13,8 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.search.QParser;
 
+import querqy.rewrite.ContextAwareQueryRewriter;
+import querqy.rewrite.commonrules.CommonRulesRewriter;
 import querqy.rewrite.commonrules.model.DecorateInstruction;
 
 /**
@@ -60,7 +62,7 @@ public class QuerqyQueryComponent extends QueryComponent {
             
             Map<String, Object> context = ((QuerqyDismaxQParser) parser).getContext();
             if (context != null) {
-                
+
                 @SuppressWarnings("unchecked")
                 Set<Object> decorations = (Set<Object>) context.get(DecorateInstruction.CONTEXT_KEY);
                 if (decorations != null) {
