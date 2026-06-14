@@ -106,6 +106,10 @@ public class ClassicRewriteChainLoader extends AbstractSolrEventListener {
                                 .parseConfigurationToRequestHandlerBody((NamedList<Object>) config, resourceLoader);
 
                         final SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
+                            @Override
+                            public String getHttpMethod() {
+                                return "POST";
+                            }
                         };
                         req.setContentStreams(singleton(new ContentStreamBase.StringStream(JsonUtil.toJson(jsonBody),
                                 UTF_8.name())));

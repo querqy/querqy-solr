@@ -9,9 +9,9 @@ import static querqy.solr.ZkRewriterContainer.IO_PATH;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -41,7 +41,7 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
     private static CloudSolrClient CLOUD_CLIENT;
 
     /** One client per node */
-    private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+    private static ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
     private static SolrZkClient ZK_CLIENT;
 
@@ -51,7 +51,7 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
 
 
         configureCluster(2)
-                .addConfig("storageformat", getFile("solrcloud").toPath().resolve("configsets").resolve("storageformat")
+                .addConfig("storageformat", getFile("solrcloud").resolve("configsets").resolve("storageformat")
                         .resolve("conf"))
                 .configure();
 
@@ -61,12 +61,12 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
         final byte[] inventory;
         final byte[] config;
 
-        try (final FileInputStream fis = new FileInputStream(getFile("zkstorage").toPath().resolve("v1")
+        try (final FileInputStream fis = new FileInputStream(getFile("zkstorage").resolve("v1")
                 .resolve("some_common_rules").toFile())) {
             inventory = IOUtils.toByteArray(fis);
         }
 
-        try (final FileInputStream fis = new FileInputStream(getFile("zkstorage").toPath().resolve("v1")
+        try (final FileInputStream fis = new FileInputStream(getFile("zkstorage").resolve("v1")
                 .resolve("some_common_rules-ed6e240a-e7e8-47b0-995a-b700a5f8c16d").toFile())) {
             config = IOUtils.toByteArray(fis);
         }
@@ -75,21 +75,20 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
         ZK_CLIENT.makePath("/configs/" + CONFIGURED_CONFIG_NAME + "/" + IO_PATH + "/" + IO_DATA, true);
 
         ZK_CLIENT.create("/configs/" + CONFIGURED_CONFIG_NAME + "/" + IO_PATH + "/" + IO_DATA +
-                "/some_common_rules-ed6e240a-e7e8-47b0-995a-b700a5f8c16d", config, CreateMode.PERSISTENT, true);
+                "/some_common_rules-ed6e240a-e7e8-47b0-995a-b700a5f8c16d", config, CreateMode.PERSISTENT);
         ZK_CLIENT.create("/configs/" + CONFIGURED_CONFIG_NAME + "/" + IO_PATH + "/some_common_rules", inventory,
-                CreateMode.PERSISTENT, true);
+                CreateMode.PERSISTENT);
 
 
         CollectionAdminRequest.createCollection(COLLECTION, "storageformat", 2, 1).process(cluster.getSolrClient());
         cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-        CLOUD_CLIENT = cluster.getSolrClient();
-        CLOUD_CLIENT.setDefaultCollection(COLLECTION);
+        CLOUD_CLIENT = cluster.getSolrClient(COLLECTION);
 
         waitForRecoveriesToFinish(CLOUD_CLIENT);
 
         for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-            CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION + "/"));
+            CLIENTS.add(new HttpJettySolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION + "/").build());
         }
 
     }
@@ -100,7 +99,7 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
             CLOUD_CLIENT.close();
             CLOUD_CLIENT = null;
         }
-        for (final HttpSolrClient client : CLIENTS) {
+        for (final SolrClient client : CLIENTS) {
             client.close();
         }
         CLIENTS.clear();
@@ -166,11 +165,11 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
 
         // the old config must be gone now
         assertFalse(ZK_CLIENT.exists("/configs/" + CONFIGURED_CONFIG_NAME + "/" + IO_PATH + "/" + IO_DATA +
-                "/some_common_rules-ed6e240a-e7e8-47b0-995a-b700a5f8c16d", true));
+                "/some_common_rules-ed6e240a-e7e8-47b0-995a-b700a5f8c16d"));
 
         // find the new config
         final List<String> children = ZK_CLIENT.getChildren("/configs/" + CONFIGURED_CONFIG_NAME + "/" + IO_PATH +
-                        "/__data", null, true)
+                        "/__data", (org.apache.zookeeper.Watcher) null)
                 .stream().filter(name -> name.contains("some_common_rules-")).collect(Collectors.toList());
         assertTrue(children.size() >= 1);
 
@@ -184,7 +183,7 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
             new CommonRulesConfigRequestBuilder()
                     .rules("a =>\n SYNONYM: b").buildSaveRequest("__data").process(getRandClient());
             fail("Server accepted invalid rewriter ID");
-        } catch (final BaseHttpSolrClient.RemoteSolrException e) {
+        } catch (final RemoteSolrException e) {
             assertEquals(400, e.code());
             assertTrue(e.getMessage().contains("Rewriter ID must not equal configured property " +
                     CONF_CONFIG_DATA_DIR));
@@ -196,7 +195,7 @@ public class ZkStorageFormatTest extends AbstractQuerqySolrCloudTestCase {
         try {
             buildDeleteRequest("__data") .process(getRandClient());
             fail("Server accepted delete for data dir");
-        } catch (final BaseHttpSolrClient.RemoteSolrException e) {
+        } catch (final RemoteSolrException e) {
             assertEquals(400, e.code());
             assertTrue(e.getMessage().contains("Rewriter ID must not equal configured property " +
                     CONF_CONFIG_DATA_DIR));

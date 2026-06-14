@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.SolrContainer;
 import org.testcontainers.utility.ComparableVersion;
@@ -130,7 +130,7 @@ public class QuerqySolrContainer extends SolrContainer {
      * returns a new SolrClient usable by tests
      */
     public SolrClient newSolrClient() {
-        return new Http2SolrClient.Builder(getSolrUrl()).build();
+        return new HttpJettySolrClient.Builder(getSolrUrl()).build();
     }
 
     public Path getTestDataPath() {

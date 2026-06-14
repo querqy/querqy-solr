@@ -55,7 +55,7 @@ public class QuerqyQueryComponentTest extends SolrTestCaseJ4 {
 
     @Test
     public void testIncorrectStage() {
-        rb.stage = STAGE_DONE;
+        rb.setStage(STAGE_DONE);
         namedList.add("foo", "bar");
 
         component.handleResponses(rb, shardRequest);
@@ -65,7 +65,7 @@ public class QuerqyQueryComponentTest extends SolrTestCaseJ4 {
 
     @Test
     public void testCorrectStageButIncorrectKey() {
-        rb.stage = STAGE_EXECUTE_QUERY;
+        rb.setStage(STAGE_EXECUTE_QUERY);
         namedList.add("foo", "bar");
 
         component.handleResponses(rb, shardRequest);
@@ -75,7 +75,7 @@ public class QuerqyQueryComponentTest extends SolrTestCaseJ4 {
 
     @Test
     public void testCorrectStage() {
-        rb.stage = STAGE_EXECUTE_QUERY;
+        rb.setStage(STAGE_EXECUTE_QUERY);
         namedList.add(QUERQY_INFO_LOG, "bar1");
         namedList.add(QUERQY_DECORATIONS, "bar2");
         namedList.add(QUERQY_NAMED_DECORATIONS, "bar3");
@@ -89,7 +89,7 @@ public class QuerqyQueryComponentTest extends SolrTestCaseJ4 {
 
     @Test
     public void testCorrectStageAndOnlyFirstIsValid() {
-        rb.stage = STAGE_EXECUTE_QUERY;
+        rb.setStage(STAGE_EXECUTE_QUERY);
         namedList.add(QUERQY_INFO_LOG, "bar1");
 
         ShardResponse srsp2 = new ShardResponse();

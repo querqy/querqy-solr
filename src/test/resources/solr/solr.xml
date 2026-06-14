@@ -1,1 +1,3 @@
-<solr/>
+<solr>
+  <str name="allowPaths">${solr.security.allow.paths:}</str>
+</solr>

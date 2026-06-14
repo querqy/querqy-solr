@@ -2,19 +2,22 @@
 
 <config>
 
-	<luceneMatchVersion>9.0.0</luceneMatchVersion>
-	<directoryFactory name="DirectoryFactory" class="solr.RAMDirectoryFactory" />
+	<luceneMatchVersion>10.0</luceneMatchVersion>
+	<directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}" />
 
 	<dataDir>${solr.core0.data.dir:}</dataDir>
 
 	<schemaFactory class="ClassicIndexSchemaFactory" />
-	
+
     <indexConfig>
-        <!-- Needed for RAMDirectoryFactory -->
-        <lockType>single</lockType>
+        <lockType>${solr.lock.type:native}</lockType>
     </indexConfig>
 
-	<updateHandler class="solr.DirectUpdateHandler2" />
+	<updateHandler class="solr.DirectUpdateHandler2">
+		<updateLog>
+			<str name="dir">${solr.ulog.dir:}</str>
+		</updateLog>
+	</updateHandler>
 
 	<requestDispatcher handleSelect="false">
 		<requestParsers enableRemoteStreaming="false"

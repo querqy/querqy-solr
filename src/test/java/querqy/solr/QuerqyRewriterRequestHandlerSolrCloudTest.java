@@ -9,9 +9,9 @@ import static querqy.solr.RewriterConfigRequestBuilder.buildListRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -50,27 +50,26 @@ public class QuerqyRewriterRequestHandlerSolrCloudTest extends AbstractQuerqySol
     /**
      * One client per node
      */
-    private static List<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+    private static List<SolrClient> CLIENTS = new ArrayList<>(5);
 
 
     @BeforeClass
     public static void setupCluster() throws Exception {
 
         configureCluster(4)
-                .addConfig("basic", getFile("solrcloud").toPath().resolve("configsets").resolve("basic")
+                .addConfig("basic", getFile("solrcloud").resolve("configsets").resolve("basic")
                         .resolve("conf"))
                 .configure();
 
         CollectionAdminRequest.createCollection(COLLECTION, "basic", 2, 1).process(cluster.getSolrClient());
         cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-        CLOUD_CLIENT = cluster.getSolrClient();
-        CLOUD_CLIENT.setDefaultCollection(COLLECTION);
+        CLOUD_CLIENT = cluster.getSolrClient(COLLECTION);
 
         waitForRecoveriesToFinish(CLOUD_CLIENT);
 
         for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-            CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION + "/"));
+            CLIENTS.add(new HttpJettySolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION + "/").build());
         }
 
     }
@@ -81,7 +80,7 @@ public class QuerqyRewriterRequestHandlerSolrCloudTest extends AbstractQuerqySol
             CLOUD_CLIENT.close();
             CLOUD_CLIENT = null;
         }
-        for (final HttpSolrClient client : CLIENTS) {
+        for (final SolrClient client : CLIENTS) {
             client.close();
         }
         CLIENTS.clear();
@@ -450,7 +449,7 @@ public class QuerqyRewriterRequestHandlerSolrCloudTest extends AbstractQuerqySol
             new CommonRulesConfigRequestBuilder().rules("a =>\n SYNONYM: b").buildSaveRequest(".data")
                     .process(getRandClient());
             fail("Server accepted invalid rewriter name");
-        } catch (final BaseHttpSolrClient.RemoteSolrException e) {
+        } catch (final RemoteSolrException e) {
             assertEquals(400, e.code());
             assertTrue(e.getMessage().contains("Rewriter ID must not start with '.'"));
         }
@@ -461,7 +460,7 @@ public class QuerqyRewriterRequestHandlerSolrCloudTest extends AbstractQuerqySol
         try {
             buildDeleteRequest(".data").process(getRandClient());
             fail("Server accepted delete for data dir");
-        } catch (final BaseHttpSolrClient.RemoteSolrException e) {
+        } catch (final RemoteSolrException e) {
             assertEquals(400, e.code());
             assertTrue(e.getMessage().contains("Rewriter ID must not start with '.'"));
         }

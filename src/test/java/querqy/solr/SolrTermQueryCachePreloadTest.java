@@ -1,5 +1,6 @@
 package querqy.solr;
 
+import static querqy.solr.CacheStatsTestSupport.readCacheStats;
 import static querqy.solr.QuerqyQParserPlugin.PARAM_REWRITERS;
 import static querqy.solr.StandaloneSolrTestSupport.withCommonRulesRewriter;
 
@@ -14,6 +15,8 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class SolrTermQueryCachePreloadTest extends SolrTestCaseJ4 {
 
+    private static final String CACHE_NAME = "querqyTermQueryCache";
+
     @BeforeClass
     public static void beforeTest() throws Exception{
         initCore("solrconfig.xml", "schema.xml", getFile("cache-preload-test/collection1").getParent());
@@ -23,139 +26,73 @@ public class SolrTermQueryCachePreloadTest extends SolrTestCaseJ4 {
         // for the firstSearcher event in testThatCacheIsAvailableAndPrefilledNotUpdatedByQueryAndUpdatedByRewriter()
         h.close();
         initCore("solrconfig.xml", "schema.xml", getFile("cache-preload-test/collection1").getParent());
+
+        // The newSearcher listener (which preloads both f1 and f2) only fires when a commit
+        // actually opens a new searcher. Index a doc so the commit is non-empty and a new
+        // searcher gets opened. Without this, only the firstSearcher listener (f1 only) runs
+        // and the test's f2-related assertions can't be satisfied.
+        assertU(adoc("id", "warmup"));
+        assertU(commit());
     }
-     
+
     @Test
     public void testThatCacheIsAvailableAndPrefilledNotUpdatedByQueryAndUpdatedByRewriter() throws Exception {
 
-        // firstSearcher
-        SolrQueryRequest req = req(
-               CommonParams.QT, "/admin/mbeans",
-               "cat", "CACHE",
-               "stats", "true"
-               );
-        // the cache is prefilled asynchronously - try 10 times to see the cache before giving up
+        // The cache is prefilled asynchronously by the newSearcher listener (both f1 and f2).
+        // Retry up to 10 times to wait for the async preload to complete.
         int attempts = 10;
-        try {
+        do {
+            try {
+                assertEquals("Cache not prefilled by newSearcher listener",
+                        2L, readCacheStats(h.getCore(), CACHE_NAME).size());
+                attempts = 0;
+            } catch (final AssertionError e) {
+                if (attempts <= 1) throw e;
+                attempts--;
+                synchronized (this) { wait(200L); }
+            }
+        } while (attempts > 0);
 
-            do {
-
-                try {
-                    assertQ("Missing querqy cache",
-                       req,
-                            "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']/lst[@name='stats']/" +
-                            "int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='1']");
-                    attempts = 0;
-                }  catch (final RuntimeException e) {
-                    if (attempts <= 1) {
-                        throw e;
-                    }
-                    attempts--;
-                    synchronized(this) {
-                        wait(200L);
-                    }
-                }
-            } while (attempts > 0);
-
-        } finally {
-            req.close();
-        }
-        
-        assertU(adoc("id", "1", "f1", "a"));
-        assertU(commit());
-         
-        // newSearcher
-        SolrQueryRequest req2 = req(
-                 CommonParams.QT, "/admin/mbeans",
-                 "cat", "CACHE",
-                 "stats", "true"
-                 );
-         
-        // one generated term in two fields is preloaded for the newSearcher event (which preloads for f1 and f2, while
-        // firstSearch only preloads for a single field):
-        assertQ("Querqy cache not prefilled",
-                 req2,
-                 "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                         + "/lst[@name='stats']/int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='2']");
-
-        req2.close();
-         
         String q = "a b c";
         SolrQueryRequest req3 = req(
-                 
                 CommonParams.Q, q,
                 DisMaxParams.QF, "f1 f2",
                 QueryParsing.OP, "AND",
                 "defType", "querqy",
                 "debugQuery", "true",
                 PARAM_REWRITERS, "common_rules"
-                 );
-         
+        );
+
         // f1:b and f2:b would be produced by synonym rule, but
         // due to pre-testing for hits in preload they should not
         // occur in the parsed query
         assertQ("Terms w/o hits found in parsedquery",
-                 req3,
-                 "//result[@name='response'][@numFound='0']",
-                 "//str[@name='parsedquery'][not(contains(.,'f1:b'))]",
-                 "//str[@name='parsedquery'][not(contains(.,'f2:b'))]"
-                );
-
+                req3,
+                "//result[@name='response'][@numFound='0']",
+                "//str[@name='parsedquery'][not(contains(.,'f1:b'))]",
+                "//str[@name='parsedquery'][not(contains(.,'f2:b'))]"
+        );
         req3.close();
-         
-         
-        SolrQueryRequest reqStats = req(
-                 CommonParams.QT, "/admin/mbeans",
-                 "cat", "CACHE",
-                 "stats", "true"
-                 );
-         
-        assertQ("Querqy cache was updated unexpectedly",
-                 reqStats,
-                 "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                         + "/lst[@name='stats']/int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='2']");
 
-        reqStats.close();
+        assertEquals("Cache was updated unexpectedly by query",
+                2L, readCacheStats(h.getCore(), CACHE_NAME).size());
 
         withCommonRulesRewriter(h.getCore(), "common_rules", "configs/commonrules/rules-cache-update.txt");
 
-        SolrQueryRequest reqAfterReloaderUpdate = req(
-                CommonParams.QT, "/admin/mbeans",
-                "cat", "CACHE",
-                "stats", "true"
-        );
-
-        // the cache is prefilled asynchronously - try 3 times to see the cache update before giving up
+        // The new rules produce 2 rhs terms searched in 2 fields each = 4 entries.
+        // The preload is triggered asynchronously on rewriter reload — retry up to 10 times.
         attempts = 10;
-        try {
-
-            do {
-
-                try {
-                    // the new rules produce 2 rhs terms, which are searched in 2 fields each
-                    assertQ("common_rules update didn't trigger preloader",
-                            reqAfterReloaderUpdate,
-                            "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']/lst[@name='stats']/" +
-                                    "int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='4']");
-                    attempts = 0;
-
-                }  catch (final RuntimeException e) {
-                    if (attempts <= 1) {
-                        throw e;
-                    }
-                    attempts--;
-                    synchronized(this) {
-                        wait(200L);
-                    }
-                }
-            } while (attempts > 0);
-
-
-        } finally {
-            reqAfterReloaderUpdate.close();
-        }
-         
-         
+        do {
+            try {
+                assertEquals("common_rules update didn't trigger preloader",
+                        4L, readCacheStats(h.getCore(), CACHE_NAME).size());
+                attempts = 0;
+            } catch (final AssertionError e) {
+                if (attempts <= 1) throw e;
+                attempts--;
+                synchronized (this) { wait(200L); }
+            }
+        } while (attempts > 0);
     }
-   
+
 }

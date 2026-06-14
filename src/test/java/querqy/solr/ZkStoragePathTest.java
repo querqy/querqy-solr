@@ -7,7 +7,7 @@ import static querqy.solr.ZkRewriterContainer.IO_PATH;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -34,7 +34,7 @@ public class ZkStoragePathTest extends AbstractQuerqySolrCloudTestCase {
     private static CloudSolrClient CLOUD_CLIENT;
 
     /** One client per node */
-    private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+    private static ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
     private static SolrZkClient ZK_CLIENT;
 
@@ -42,20 +42,19 @@ public class ZkStoragePathTest extends AbstractQuerqySolrCloudTestCase {
     public static void setupCluster() throws Exception {
 
         configureCluster(2)
-                .addConfig("storagepath", getFile("solrcloud").toPath().resolve("configsets").resolve("storagepath")
+                .addConfig("storagepath", getFile("solrcloud").resolve("configsets").resolve("storagepath")
                         .resolve("conf"))
                 .configure();
 
         CollectionAdminRequest.createCollection(COLLECTION, "storagepath", 2, 1).process(cluster.getSolrClient());
         cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-        CLOUD_CLIENT = cluster.getSolrClient();
-        CLOUD_CLIENT.setDefaultCollection(COLLECTION);
+        CLOUD_CLIENT = cluster.getSolrClient(COLLECTION);
 
         waitForRecoveriesToFinish(CLOUD_CLIENT);
 
         for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-            CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION + "/"));
+            CLIENTS.add(new HttpJettySolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION + "/").build());
         }
 
         ZK_CLIENT = zkClient();
@@ -67,7 +66,7 @@ public class ZkStoragePathTest extends AbstractQuerqySolrCloudTestCase {
             CLOUD_CLIENT.close();
             CLOUD_CLIENT = null;
         }
-        for (final HttpSolrClient client : CLIENTS) {
+        for (final SolrClient client : CLIENTS) {
             client.close();
         }
         CLIENTS.clear();
@@ -121,9 +120,9 @@ public class ZkStoragePathTest extends AbstractQuerqySolrCloudTestCase {
         assertNotNull(rsp);
         assertEquals(1L, rsp.getResults().getNumFound());
 
-        final List<String> children = ZK_CLIENT.getChildren("/configs/" + configuredConfigName + "/" + IO_PATH + "/" + IO_DATA, null, true)
-                .stream().filter(name -> name.contains("some_common_rules-")).collect(Collectors.toList());
-        assertTrue(children.size() >= 1);
+        final List<String> children = ZK_CLIENT.getChildren("/configs/" + configuredConfigName + "/" + IO_PATH + "/" + IO_DATA, (org.apache.zookeeper.Watcher) null)
+                .stream().filter(name -> name.contains("some_common_rules-")).toList();
+        assertFalse(children.isEmpty());
     }
 
     private SolrClient getRandClient() {

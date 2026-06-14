@@ -1,19 +1,14 @@
 package querqy.solr.it;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.testcontainers.containers.SolrClientUtils;
 import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessorType;
@@ -42,17 +37,17 @@ public class QuerqySolrClientUtils extends SolrClientUtils {
     public static void createCollection(QuerqySolrContainer solr, String collectionName, String configurationName,
             int numShards) {
 
-        // compose create collection url
-        HttpGet createCollection = new HttpGet(String.format(
+        URI uri = URI.create(String.format(
                 "%s/admin/collections?action=CREATE&name=%s&numShards=%s&replicationFactor=1&wt=json&collection.configName=%s&maxShardsPerNode=%s",
                 solr.getSolrUrl(), collectionName, numShards, configurationName, numShards));
 
-        // execute request
-        try (CloseableHttpClient client = HttpClients.createMinimal();
-            CloseableHttpResponse response = client.execute(createCollection);) {
-            
-            if (response.getStatusLine().getStatusCode() > 299) {
-                throw new IllegalArgumentException(response.getStatusLine().getReasonPhrase());
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpResponse<String> response = client.send(
+                    HttpRequest.newBuilder(uri).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() > 299) {
+                throw new IllegalArgumentException("HTTP " + response.statusCode() + ": " + response.body());
             }
 
         } catch (Exception e) {
@@ -102,21 +97,20 @@ public class QuerqySolrClientUtils extends SolrClientUtils {
      */
     public static void importChorusDataset(QuerqySolrContainer solr, String collectionName) throws IOException {
 
-        // read chorus data set
         String chorusDataSet = FileUtils.readFileToString(solr.getTestDataPath().toFile(), "UTF-8");
 
-        // compose create collection url
-        HttpPost importData = new HttpPost(String.format(
-                "%s/%s/update?commit=true",
-                solr.getSolrUrl(), collectionName));
-        importData.setEntity(new StringEntity(chorusDataSet, ContentType.APPLICATION_JSON));
+        URI uri = URI.create(String.format("%s/%s/update?commit=true", solr.getSolrUrl(), collectionName));
 
-        // execute request
-        try (CloseableHttpClient client = HttpClients.createMinimal();
-            CloseableHttpResponse response = client.execute(importData);) {
-            
-            if (response.getStatusLine().getStatusCode() > 299) {
-                throw new IllegalArgumentException(response.getStatusLine().getReasonPhrase());
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpResponse<String> response = client.send(
+                    HttpRequest.newBuilder(uri)
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(chorusDataSet))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() > 299) {
+                throw new IllegalArgumentException("HTTP " + response.statusCode() + ": " + response.body());
             }
 
         } catch (Exception e) {

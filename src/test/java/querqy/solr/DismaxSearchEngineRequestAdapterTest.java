@@ -258,6 +258,7 @@ public class DismaxSearchEngineRequestAdapterTest {
         ModifiableSolrParams params = new ModifiableSolrParams();
 
         when(request.getCore()).thenReturn(solrCore);
+        when(request.getParams()).thenReturn(params);
 
         final TermQuery expected = new TermQuery(new Term("id", "123"));
 

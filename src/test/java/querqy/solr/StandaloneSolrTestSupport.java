@@ -3,9 +3,10 @@ package querqy.solr;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static querqy.solr.QuerqyRewriterRequestHandler.ActionParam.*;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -89,9 +90,9 @@ public interface StandaloneSolrTestSupport {
                                         final CommonRulesConfigRequestBuilder builder) {
         SolrRequestHandler handler = core.getRequestHandler("/querqy/rewriter/" + rewriterId);
 
-        final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, SAVE.params());
+        final SolrQueryRequestBase req = new SolrQueryRequestBase(core, SAVE.params()) {};
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(builder.buildJson())));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -119,9 +120,9 @@ public interface StandaloneSolrTestSupport {
                                         final ReplaceConfigRequestBuilder builder) {
         SolrRequestHandler handler = core.getRequestHandler("/querqy/rewriter/" + rewriterId);
 
-        final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, SAVE.params());
+        final SolrQueryRequestBase req = new SolrQueryRequestBase(core, SAVE.params()) {};
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(builder.buildJson())));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -144,14 +145,14 @@ public interface StandaloneSolrTestSupport {
 
         SolrRequestHandler handler = core.getRequestHandler("/querqy/rewriter/" + rewriterId);
 
-        final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, SAVE.params());
+        final SolrQueryRequestBase req = new SolrQueryRequestBase(core, SAVE.params()) {};
 
         final Map<String, Object> request = new HashMap<>();
         request.put("class", rewriterClass.getName());
         request.put("config", config);
 
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(JsonUtil.toJson(request))));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -167,9 +168,9 @@ public interface StandaloneSolrTestSupport {
 
         SolrRequestHandler handler = core.getRequestHandler("/querqy/rewriter/" + rewriterId);
 
-        final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, DELETE.params());
+        final SolrQueryRequestBase req = new SolrQueryRequestBase(core, DELETE.params()) {};
 
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));

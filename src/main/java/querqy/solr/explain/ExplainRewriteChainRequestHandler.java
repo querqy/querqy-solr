@@ -2,6 +2,7 @@ package querqy.solr.explain;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
+import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -149,7 +150,7 @@ public class ExplainRewriteChainRequestHandler implements SolrRequestHandler {
     }
 
     @Override
-    public void initializeMetrics(final SolrMetricsContext parentContext, final String scope) {
+    public void initializeMetrics(final SolrMetricsContext parentContext, final Attributes attributes) {
     }
 
     @Override

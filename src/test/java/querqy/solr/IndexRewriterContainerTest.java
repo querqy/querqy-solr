@@ -1,12 +1,10 @@
 package querqy.solr;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -20,8 +18,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.junit.*;
@@ -36,7 +33,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.io.filefilter.FileFilterUtils.*;
@@ -50,19 +46,20 @@ public class IndexRewriterContainerTest extends SolrTestCase {
     private static final String SEARCH_CORE_NAME_A = "search_a";
     private static final String SEARCH_CORE_NAME_B = "search_b";
 
-    private static JettySolrRunner leaderJetty, followerJetty;
+    @ClassRule
+    public static final SolrJettyTestRule leaderRule = new SolrJettyTestRule();
+    @ClassRule
+    public static final SolrJettyTestRule followerRule = new SolrJettyTestRule();
+
     private static SolrClient leaderClient, followerClient;
 
-    private static Path leaderSolrHome;
-    private static Path followerSolrHome;
-
     @BeforeClass
-    public static void startServer() throws Exception {
-        System.setProperty("solr.disable.allowUrls", "true");
-        leaderSolrHome = prepareSolrHomeWithConfigSets("leader");
-        followerSolrHome = prepareSolrHomeWithConfigSets("follower");
-        startSolrLeader(leaderSolrHome.toString(), Path.of(leaderSolrHome.toString(), "data").toString());
-        startSolrFollower(followerSolrHome.toString(), Path.of(followerSolrHome.toString(), "data").toString());
+    public static void startServers() throws Exception {
+        System.setProperty("solr.security.allow.urls.enabled", "false");
+        leaderRule.startSolr(prepareSolrHomeWithConfigSets("leader"));
+        followerRule.startSolr(prepareSolrHomeWithConfigSets("follower"));
+        leaderClient = leaderRule.getAdminClient();
+        followerClient = followerRule.getAdminClient();
     }
 
     @Before
@@ -85,28 +82,6 @@ public class IndexRewriterContainerTest extends SolrTestCase {
         deleteCore(followerClient, QUERQY_CONFIG_CORE_NAME);
         deleteCore(followerClient, SEARCH_CORE_NAME_A);
         deleteCore(followerClient, SEARCH_CORE_NAME_B);
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        if (null != leaderJetty) {
-            leaderJetty.stop();
-            leaderJetty = null;
-        }
-        if (null != followerJetty) {
-            followerJetty.stop();
-            followerJetty = null;
-        }
-        if (null != leaderClient) {
-            leaderClient.close();
-            leaderClient = null;
-        }
-        if (null != followerClient) {
-            followerClient.close();
-            followerClient = null;
-        }
-        PathUtils.deleteDirectory(leaderSolrHome);
-        PathUtils.deleteDirectory(followerSolrHome);
     }
 
     @Test
@@ -448,35 +423,13 @@ public class IndexRewriterContainerTest extends SolrTestCase {
         deleteRequest.process(client, collection);
     }
 
-    public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
-        return new Http2SolrClient.Builder(baseUrl)
-                .withDefaultCollection(collectionOrCore)
-                .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-                .withIdleTimeout(90000, TimeUnit.MILLISECONDS)
-                .build();
-    }
-
-    private static void startSolrLeader(final String homeDir, final String dataDir) throws Exception {
-        leaderJetty = createAndStartSolr(homeDir, dataDir);
-        leaderClient = createNewSolrClient("http://localhost:" + leaderJetty.getLocalPort() + "/solr", null);
-    }
-
-    private static void startSolrFollower(final String homeDir, final String dataDir) throws Exception {
-        followerJetty = createAndStartSolr(homeDir, dataDir);
-        followerClient = createNewSolrClient("http://localhost:" + followerJetty.getLocalPort() + "/solr", null);
-    }
-
     private static Path prepareSolrHomeWithConfigSets(String name) throws Exception {
         final Path solrHome = SolrTestCase.createTempDir("solrHome-" + name);
-        final Path configsetResourcePath = resourcePath();
-        FileUtils.copyDirectory(configsetResourcePath.toFile(), solrHome.toFile());
-        FileUtils.copyDirectory(configsetResourcePath.toFile(), solrHome.toFile(), notFileFilter(
+        final File source = new File(Objects.requireNonNull(
+                IndexRewriterContainer.class.getClassLoader().getResource("solr")).toURI()).getAbsoluteFile();
+        FileUtils.copyDirectory(source, solrHome.toFile(), notFileFilter(
                 and(directoryFileFilter(), nameFileFilter("collection1"))));
         return solrHome;
-    }
-
-    private static Path resourcePath() throws Exception {
-        return new File(Objects.requireNonNull(IndexRewriterContainer.class.getClassLoader().getResource("solr")).toURI()).getAbsoluteFile().toPath();
     }
 
     private static final class CreateWithPropertiesRequest extends CoreAdminRequest.Create {
@@ -506,7 +459,7 @@ public class IndexRewriterContainerTest extends SolrTestCase {
             final String configset
     ) throws SolrServerException, IOException {
         final var properties = new HashMap<String, String>();
-        properties.put("solr.replication.leader.url", "http://localhost:" + leaderJetty.getLocalPort() + "/solr/" + name);
+        properties.put("solr.replication.leader.url", leaderRule.getBaseUrl() + "/" + name);
         properties.put("solr.replication.follower.enabled", "true");
         createCore(solrClient, name, configset, properties);
     }
@@ -527,15 +480,6 @@ public class IndexRewriterContainerTest extends SolrTestCase {
 
     private static void deleteCore(final SolrClient solrClient, final String name) throws SolrServerException, IOException {
         CoreAdminRequest.unloadCore(name, true, true, solrClient);
-    }
-
-    private static JettySolrRunner createAndStartSolr(final String homeDir, final String dataDir) throws Exception {
-        Properties nodeProperties = new Properties();
-        nodeProperties.setProperty("solr.data.dir", dataDir);
-        JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-        JettySolrRunner jetty = new JettySolrRunner(homeDir, nodeProperties, jettyConfig);
-        jetty.start();
-        return jetty;
     }
 }
 

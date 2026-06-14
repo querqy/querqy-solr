@@ -38,7 +38,7 @@ public class QuerqyRewriterRequestHandler implements SolrRequestHandler, NestedR
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
-    public void initializeMetrics(final SolrMetricsContext parentContext, final String scope) {
+    public void initializeMetrics(final SolrMetricsContext parentContext, final io.opentelemetry.api.common.Attributes attributes) {
     }
 
     @Override
@@ -62,7 +62,15 @@ public class QuerqyRewriterRequestHandler implements SolrRequestHandler, NestedR
         static Optional<ActionParam> fromRequest(final SolrQueryRequest req) {
 
             // Solr V1 API can only handle GET and POST.
-            final String method = req.getHttpMethod();
+            // Solr 10's SolrQueryRequest.getHttpMethod() NPEs when the HTTP method context is
+            // missing (e.g. for in-process requests built via SolrTestCaseJ4.req(...));
+            // earlier versions returned null. Treat NPE the same as a missing method.
+            String method;
+            try {
+                method = req.getHttpMethod();
+            } catch (final NullPointerException e) {
+                method = null;
+            }
 
             final String actionString = req.getParams().get(PARAM_ACTION);
             if (actionString == null && method == null) {
@@ -369,7 +377,7 @@ public class QuerqyRewriterRequestHandler implements SolrRequestHandler, NestedR
 
         return new SolrRequestHandler() {
             @Override
-            public void initializeMetrics(final SolrMetricsContext parentContext, final String scope) {
+            public void initializeMetrics(final SolrMetricsContext parentContext, final io.opentelemetry.api.common.Attributes attributes) {
 
             }
 

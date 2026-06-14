@@ -117,7 +117,7 @@ public class QuerqyQueryComponent extends QueryComponent {
     public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
         super.handleResponses(rb, sreq);
 
-        if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+        if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
             return;
         }
 

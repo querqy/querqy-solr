@@ -19,7 +19,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.query.FilterQuery;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.schema.IndexSchema;
@@ -202,7 +202,7 @@ public class IndexRewriterContainer extends RewriterContainer<SolrResourceLoader
                     "action", "update",
                     "name", this.rewriterConfigIndexName));
 
-            try (final LocalSolrQueryRequest solrUpdateRequest = new LocalSolrQueryRequest(configurationCore, requestParams)) {
+            try (final SolrQueryRequestBase solrUpdateRequest = new SolrQueryRequestBase(configurationCore, requestParams) {}) {
                 final AddUpdateCommand addCmd = new AddUpdateCommand(solrUpdateRequest);
                 addCmd.solrDoc = doc;
                 configurationCore.getUpdateHandler().addDoc(addCmd);
@@ -229,7 +229,7 @@ public class IndexRewriterContainer extends RewriterContainer<SolrResourceLoader
                     "action", "update",
                     "name", this.rewriterConfigIndexName));
 
-            try (final LocalSolrQueryRequest solrUpdateRequest = new LocalSolrQueryRequest(configurationCore, requestParams)) {
+            try (final SolrQueryRequestBase solrUpdateRequest = new SolrQueryRequestBase(configurationCore, requestParams) {}) {
                 final DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand(solrUpdateRequest);
                 deleteCmd.id = configurationDocumentId(core.getName(), rewriterId);
                 configurationCore.getUpdateHandler().delete(deleteCmd);
@@ -279,7 +279,7 @@ public class IndexRewriterContainer extends RewriterContainer<SolrResourceLoader
     }
 
     protected Optional<SolrDocument> configurationDocumentForRewriter(final SolrIndexSearcher searcher, final String coreName, final String rewriterId) throws IOException {
-        try (final LocalSolrQueryRequest req = new LocalSolrQueryRequest(searcher.getCore(), new ModifiableSolrParams())) {
+        try (final SolrQueryRequestBase req = new SolrQueryRequestBase(searcher.getCore(), new ModifiableSolrParams()) {}) {
 
             final QueryResult result = new QueryResult();
 
@@ -310,7 +310,7 @@ public class IndexRewriterContainer extends RewriterContainer<SolrResourceLoader
 
     protected List<SolrDocument> allConfigurationDocuments(final SolrIndexSearcher searcher, final String coreName) throws IOException {
         final ArrayList<SolrDocument> configurationDocuments = new ArrayList<>();
-        try (final LocalSolrQueryRequest req = new LocalSolrQueryRequest(searcher.getCore(), new ModifiableSolrParams())) {
+        try (final SolrQueryRequestBase req = new SolrQueryRequestBase(searcher.getCore(), new ModifiableSolrParams()) {}) {
             final QueryResult result = new QueryResult();
 
             final SortSpec sortSpec = SortSpecParsing.parseSortSpec(String.format("%s asc", FIELD_DOC_ID), searcher.getSchema());

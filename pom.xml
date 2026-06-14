@@ -3,7 +3,7 @@
 
     <groupId>org.querqy</groupId>
     <artifactId>querqy-solr</artifactId>
-    <version>5.10.lucene980.0-SNAPSHOT</version>
+    <version>5.10.lucene1021.0-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Querqy library for query rewriting for Solr</description>
@@ -48,7 +48,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
 
         <maven-download-plugin.version>1.13.0</maven-download-plugin.version>
         <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
@@ -60,14 +60,14 @@
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 
-        <querqy-lucene.version>5.9.lucene980.0</querqy-lucene.version>
+        <querqy-lucene.version>5.9.lucene1040.0</querqy-lucene.version>
 
         <commons.io.version>2.15.1</commons.io.version>
         <minidev.json-smart.version>2.5.2</minidev.json-smart.version>
         <log4j.version>2.21.1</log4j.version>
         <slf4j.version>2.0.13</slf4j.version>
-        <solr.version>9.8.0</solr.version>
-        <testcontainers.version>1.20.5</testcontainers.version>
+        <solr.version>10.1.0-SNAPSHOT</solr.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
         <junit.version>4.13.2</junit.version>
         <hamcrest.version>3.0</hamcrest.version>
         <mockito.version>5.15.2</mockito.version>
@@ -85,6 +85,19 @@
             <artifactId>solr-test-framework</artifactId>
             <version>${solr.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <!--
+                    curator-test transitively pulls in junit-jupiter-api, which puts
+                    junit-platform-commons on the classpath and causes Surefire/Failsafe
+                    to auto-pick the JUnit Platform provider (which then needs
+                    junit-vintage-engine to run our JUnit 4 tests). Excluding it lets
+                    the surefire-junit4 provider be used directly.
+                -->
+                <exclusion>
+                    <groupId>org.junit.jupiter</groupId>
+                    <artifactId>junit-jupiter-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -233,6 +246,12 @@
                     <!-- Use narrow US-ASCII as default Java character set (via file.encoding system property)
                          to increase the chance of catching code that relies on the JDK default encoding -->
                     <argLine>-Dfile.encoding=US-ASCII</argLine>
+                    <systemPropertyVariables>
+                        <!--silence warnings when running tests -->
+                        <solr.configset.default.confdir>${project.basedir}/src/test/resources/solr/collection1/conf</solr.configset.default.confdir>
+                        <solr.logs.dir>${java.io.tmpdir}</solr.logs.dir>
+                        <java.security.egd>file:/dev/./urandom</java.security.egd>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
@@ -280,6 +299,18 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${maven-failsafe-plugin.version}</version>
+                <dependencies>
+                    <!--
+                        Force the surefire-junit4 provider so failsafe doesn't auto-pick the
+                        JUnit Platform provider (which would require junit-vintage-engine to
+                        run our JUnit 4 tests). All tests in this project use JUnit 4.
+                    -->
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>${maven-failsafe-plugin.version}</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <includes>
                         <include>**/*</include>
@@ -289,7 +320,9 @@
                         <project.build.directory>${project.build.directory}</project.build.directory>
                         <project.build.finalName>${project.build.finalName}</project.build.finalName>
                         <project.version>${project.version}</project.version>
-                        <solr.test.versions>solr:9.8,solr:9.7,solr:9.6,solr:9.5,solr:9.4,solr:9.3,solr:9.2,solr:9.1</solr.test.versions>
+                        <solr.test.versions>solr:10.0</solr.test.versions>
+                        <!-- Docker Desktop 4.63+ returns a stub /info on API < v1.44; force docker-java to v1.44 -->
+                        <api.version>1.44</api.version>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
