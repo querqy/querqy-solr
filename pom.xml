@@ -60,8 +60,7 @@
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 
-        <querqy-lucene.version>5.10.lucene1032.0-SNAPSHOT</querqy-lucene.version>
-        <lucene.version>10.4.0</lucene.version>
+        <querqy-lucene.version>5.9.lucene1040.0</querqy-lucene.version>
 
         <commons.io.version>2.15.1</commons.io.version>
         <minidev.json-smart.version>2.5.2</minidev.json-smart.version>

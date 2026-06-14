@@ -18,7 +18,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
-import org.apache.solr.search.DisMaxQParser;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.FunctionQParserPlugin;
 import org.apache.solr.search.QParser;
@@ -143,7 +142,7 @@ public class DismaxSearchEngineRequestAdapter implements LuceneSearchEngineReque
         allPhraseFields.addAll(phraseFields2);
         allPhraseFields.addAll(phraseFields3);
 
-        minShouldMatch = DisMaxQParser.parseMinShouldMatch(request.getSchema(), solrParams);
+        minShouldMatch = SolrPluginUtils.parseMinShouldMatch(request.getSchema(), solrParams);
 
     }
 

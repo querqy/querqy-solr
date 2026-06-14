@@ -2,7 +2,7 @@
 
 <config>
 
-	<luceneMatchVersion>9.0.0</luceneMatchVersion>
+	<luceneMatchVersion>10.0</luceneMatchVersion>
 	<directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}" />
 
 	<dataDir>${solr.core0.data.dir:}</dataDir>
