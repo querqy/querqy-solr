@@ -19,7 +19,6 @@ import org.junit.Test;
 import querqy.model.convert.converter.MapConverterConfig;
 import querqy.model.convert.builder.BooleanQueryBuilder;
 import querqy.model.convert.builder.ExpandedQueryBuilder;
-import querqy.rewrite.experimental.QueryRewritingHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -135,10 +134,7 @@ public class QuerqyJsonQParserTest extends SolrTestCaseJ4 {
         params.add("defType", "querqy");
 
         Assertions.assertThatCode(() ->
-                createRequestToTestMatching(QueryRewritingHandler.builder()
-                        .build()
-                        .rewriteQuery("tv")
-                        .getQuery(), params)
+                createRequestToTestMatching(expanded(bq("tv")), params)
                         .process(solrRule.getSolrClient()))
                 .doesNotThrowAnyException();
     }
@@ -149,10 +145,7 @@ public class QuerqyJsonQParserTest extends SolrTestCaseJ4 {
         params.add("qt", "/rh-with-proper-def-type");
 
         Assertions.assertThatCode(() ->
-                createRequestToTestMatching(QueryRewritingHandler.builder()
-                        .build()
-                        .rewriteQuery("tv")
-                        .getQuery(), params)
+                createRequestToTestMatching(expanded(bq("tv")), params)
                         .process(solrRule.getSolrClient()))
                 .doesNotThrowAnyException();
     }
@@ -172,13 +165,8 @@ public class QuerqyJsonQParserTest extends SolrTestCaseJ4 {
     }
     @Ignore
     @Test
-    public void testQueryRewritingHandler() throws IOException, SolrServerException {
-        final ExpandedQueryBuilder expanded = QueryRewritingHandler.builder()
-                .addCommonRulesRewriter("tv => \n SYNONYM: television")
-                .build()
-                .rewriteQuery("tv")
-                .getQuery();
-
+    public void testMatchingOfQueryWithSynonym() throws IOException, SolrServerException {
+        final ExpandedQueryBuilder expanded = expanded(bq(dmq("tv", "television")));
 
         final QueryResponse response = createRequestToTestMatching(expanded)
                 .process(solrRule.getSolrClient());
