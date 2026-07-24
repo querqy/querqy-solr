@@ -3,7 +3,6 @@ package querqy.solr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import querqy.lucene.JsonQueryParsingController;
 import querqy.lucene.QueryParsingController;
 import querqy.lucene.rewrite.cache.TermQueryCache;
 import querqy.lucene.rewrite.infologging.InfoLogging;
