@@ -51,7 +51,7 @@
         <java.version>11</java.version>
 
         <maven-download-plugin.version>1.13.0</maven-download-plugin.version>
-        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+        <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
