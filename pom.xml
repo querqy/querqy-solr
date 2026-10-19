@@ -65,7 +65,7 @@
         <commons.io.version>2.22.0</commons.io.version>
         <minidev.json-smart.version>2.5.2</minidev.json-smart.version>
         <log4j.version>2.21.1</log4j.version>
-        <slf4j.version>2.0.13</slf4j.version>
+        <slf4j.version>2.0.20</slf4j.version>
         <solr.version>9.11.0</solr.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <junit.version>4.13.2</junit.version>
