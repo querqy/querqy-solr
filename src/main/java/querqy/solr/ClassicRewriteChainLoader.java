@@ -1,5 +1,6 @@
 package querqy.solr;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
@@ -107,6 +108,8 @@ public class ClassicRewriteChainLoader extends AbstractSolrEventListener {
 
                         final SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
                         };
+                        // since Solr 9.11, SolrQueryRequest.getHttpMethod() fails if the context has no HTTP method
+                        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
                         req.setContentStreams(singleton(new ContentStreamBase.StringStream(JsonUtil.toJson(jsonBody),
                                 UTF_8.name())));
 

@@ -3,6 +3,7 @@ package querqy.solr;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static querqy.solr.QuerqyRewriterRequestHandler.ActionParam.*;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -91,7 +92,7 @@ public interface StandaloneSolrTestSupport {
 
         final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, SAVE.params());
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(builder.buildJson())));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -121,7 +122,7 @@ public interface StandaloneSolrTestSupport {
 
         final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, SAVE.params());
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(builder.buildJson())));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -151,7 +152,7 @@ public interface StandaloneSolrTestSupport {
         request.put("config", config);
 
         req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(JsonUtil.toJson(request))));
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -169,7 +170,7 @@ public interface StandaloneSolrTestSupport {
 
         final LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, DELETE.params());
 
-        req.getContext().put("httpMethod", "POST");
+        req.getContext().put("httpMethod", SolrRequest.METHOD.POST);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
