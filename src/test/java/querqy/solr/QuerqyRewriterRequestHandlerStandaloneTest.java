@@ -5,6 +5,7 @@ import static querqy.solr.StandaloneSolrTestSupport.deleteRewriter;
 import static querqy.solr.StandaloneSolrTestSupport.withCommonRulesRewriter;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -80,6 +81,9 @@ public class QuerqyRewriterRequestHandlerStandaloneTest extends SolrTestCaseJ4 {
 
 
         try (final SolrQueryRequest req = req("qt", "/querqy/rewriter/" + rewriterName )) {
+
+            // since Solr 9.11, SolrQueryRequest.getHttpMethod() fails if the context has no HTTP method
+            req.getContext().put("httpMethod", SolrRequest.METHOD.GET);
 
             assertQ("Rewriter config not found",
                     req,

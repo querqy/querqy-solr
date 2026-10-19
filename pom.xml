@@ -3,7 +3,7 @@
 
     <groupId>org.querqy</groupId>
     <artifactId>querqy-solr</artifactId>
-    <version>5.10.lucene980.0-SNAPSHOT</version>
+    <version>5.9.solr9110.0-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Querqy library for query rewriting for Solr</description>
@@ -62,11 +62,11 @@
 
         <querqy-lucene.version>5.9.lucene980.0</querqy-lucene.version>
 
-        <commons.io.version>2.15.1</commons.io.version>
+        <commons.io.version>2.22.0</commons.io.version>
         <minidev.json-smart.version>2.5.2</minidev.json-smart.version>
         <log4j.version>2.21.1</log4j.version>
         <slf4j.version>2.0.13</slf4j.version>
-        <solr.version>9.8.0</solr.version>
+        <solr.version>9.11.0</solr.version>
         <testcontainers.version>1.20.5</testcontainers.version>
         <junit.version>4.13.2</junit.version>
         <hamcrest.version>3.0</hamcrest.version>
@@ -291,7 +291,7 @@
                         <project.build.directory>${project.build.directory}</project.build.directory>
                         <project.build.finalName>${project.build.finalName}</project.build.finalName>
                         <project.version>${project.version}</project.version>
-                        <solr.test.versions>solr:9.8,solr:9.7,solr:9.6,solr:9.5,solr:9.4,solr:9.3,solr:9.2,solr:9.1</solr.test.versions>
+                        <solr.test.versions>solr:9.11,solr:9.10,solr:9.9,solr:9.8,solr:9.7,solr:9.6,solr:9.5,solr:9.4,solr:9.3,solr:9.2,solr:9.1</solr.test.versions>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
