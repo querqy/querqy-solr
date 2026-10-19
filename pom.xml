@@ -62,7 +62,7 @@
 
         <querqy-lucene.version>5.9.lucene980.0</querqy-lucene.version>
 
-        <commons.io.version>2.15.1</commons.io.version>
+        <commons.io.version>2.22.0</commons.io.version>
         <minidev.json-smart.version>2.5.2</minidev.json-smart.version>
         <log4j.version>2.21.1</log4j.version>
         <slf4j.version>2.0.13</slf4j.version>
