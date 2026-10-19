@@ -232,7 +232,9 @@
                     <excludedGroups>querqy.solr.it.IntegrationTest</excludedGroups>
                     <!-- Use narrow US-ASCII as default Java character set (via file.encoding system property)
                          to increase the chance of catching code that relies on the JDK default encoding -->
-                    <argLine>-Dfile.encoding=US-ASCII</argLine>
+                    <!-- Set egd before the JVM initialises SecureRandom, otherwise the Solr test framework
+                         may fail with 'NativePRNG is in use by your JVM' depending on test order -->
+                    <argLine>-Dfile.encoding=US-ASCII -Djava.security.egd=file:/dev/./urandom</argLine>
                 </configuration>
             </plugin>
 
