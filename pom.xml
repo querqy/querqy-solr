@@ -3,7 +3,7 @@
 
     <groupId>org.querqy</groupId>
     <artifactId>querqy-solr</artifactId>
-    <version>5.10.solr9110.0-SNAPSHOT</version>
+    <version>5.9.solr9110.0-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Querqy library for query rewriting for Solr</description>
