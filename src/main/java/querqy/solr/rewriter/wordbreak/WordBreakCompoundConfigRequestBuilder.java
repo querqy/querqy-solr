@@ -4,6 +4,8 @@ import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CO
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_COMPOUND;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_MAX_EXPANSIONS;
+import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST;
+import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_VERIFY_COLLATION;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DICTIONARY_FIELD;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_LOWER_CASE_INPUT;
@@ -15,6 +17,7 @@ import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CO
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_REVERSE_COMPOUND_TRIGGER_WORDS;
 
 import querqy.rewriter.wordbreak.Morphology;
+import querqy.rewriter.wordbreak.OptionalModifierPosition;
 import querqy.rewriter.wordbreak.SuffixGroupMorphology;
 import querqy.solr.RewriterConfigRequestBuilder;
 
@@ -34,6 +37,8 @@ public class WordBreakCompoundConfigRequestBuilder extends RewriterConfigRequest
     private Boolean alwaysAddReverseCompounds;
     private Integer decompoundMaxExpansions;
     private Boolean decompoundVerifyCollation;
+    private String decompoundOptionalModifierPosition;
+    private Float decompoundOptionalModifierBoost;
     private String morphology;
     private String decompoundMorphology;
     private String compoundMorphology;
@@ -97,6 +102,18 @@ public class WordBreakCompoundConfigRequestBuilder extends RewriterConfigRequest
             }
             decompoundConf.put(CONF_DECOMPOUND_VERIFY_COLLATION,
                     decompoundVerifyCollation);
+        }
+        if (decompoundOptionalModifierPosition != null) {
+            if (decompoundConf == null) {
+                decompoundConf = new HashMap<>();
+            }
+            decompoundConf.put(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, decompoundOptionalModifierPosition);
+        }
+        if (decompoundOptionalModifierBoost != null) {
+            if (decompoundConf == null) {
+                decompoundConf = new HashMap<>();
+            }
+            decompoundConf.put(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, decompoundOptionalModifierBoost);
         }
         if (decompoundMorphology != null) {
             if (decompoundConf == null) {
@@ -202,6 +219,43 @@ public class WordBreakCompoundConfigRequestBuilder extends RewriterConfigRequest
 
     public WordBreakCompoundConfigRequestBuilder verifyDecompoundCollation(final Boolean verify) {
         this.decompoundVerifyCollation = verify;
+        return this;
+    }
+
+    /**
+     * Makes one part of a decompounded query term optional, e.g. 'gas +grill' instead of '+gas +grill' for the
+     * query term 'gasgrill'. Use {@link OptionalModifierPosition#FIRST} for languages in which the modifier is the
+     * first part of the compound (German, Dutch).
+     */
+    public WordBreakCompoundConfigRequestBuilder optionalModifierPosition(final OptionalModifierPosition position) {
+        this.decompoundOptionalModifierPosition = position == null ? null : position.name();
+        return this;
+    }
+
+    /**
+     * Same as {@link #optionalModifierPosition(OptionalModifierPosition)}, using the name of the position.
+     */
+    public WordBreakCompoundConfigRequestBuilder optionalModifierPosition(final String position) {
+        if (position == null) {
+            this.decompoundOptionalModifierPosition = null;
+        } else {
+            try {
+                this.decompoundOptionalModifierPosition = OptionalModifierPosition.valueOf(
+                        position.trim().toUpperCase()).name();
+            } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException("Unknown optionalModifierPosition: " + position
+                        + ". Valid values: " + Arrays.toString(OptionalModifierPosition.values()));
+            }
+        }
+        return this;
+    }
+
+    /**
+     * The boost of the optional part of a decompounded query term. Must be 1.0 (the default) if no
+     * optional modifier position is set or if the position is {@link OptionalModifierPosition#NONE}.
+     */
+    public WordBreakCompoundConfigRequestBuilder optionalModifierBoost(final Float boost) {
+        this.decompoundOptionalModifierBoost = boost;
         return this;
     }
 
