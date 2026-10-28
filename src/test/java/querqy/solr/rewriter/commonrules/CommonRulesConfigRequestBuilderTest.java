@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessorType;
 
 import java.util.List;

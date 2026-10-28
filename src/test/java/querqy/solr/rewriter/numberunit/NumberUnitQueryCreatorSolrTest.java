@@ -2,10 +2,10 @@ package querqy.solr.rewriter.numberunit;
 
 import org.junit.Test;
 import querqy.model.StringRawQuery;
-import querqy.rewrite.contrib.numberunit.model.FieldDefinition;
-import querqy.rewrite.contrib.numberunit.model.LinearFunction;
-import querqy.rewrite.contrib.numberunit.model.NumberUnitDefinition;
-import querqy.rewrite.contrib.numberunit.model.PerUnitNumberUnitDefinition;
+import querqy.rewriter.numberunit.model.FieldDefinition;
+import querqy.rewriter.numberunit.model.LinearFunction;
+import querqy.rewriter.numberunit.model.NumberUnitDefinition;
+import querqy.rewriter.numberunit.model.PerUnitNumberUnitDefinition;
 
 import java.math.BigDecimal;
 import java.util.Arrays;

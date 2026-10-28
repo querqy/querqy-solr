@@ -1,6 +1,5 @@
 package querqy.solr;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -56,14 +55,14 @@ public class QuerqyReRankQuery extends RankQuery {
     }
 
     @Override
-    public Query rewrite(final IndexReader reader) throws IOException {
-        Query m = mainQuery.rewrite(reader);
-        Query r = reRankQuery.rewrite(reader);
+    public Query rewrite(final IndexSearcher searcher) throws IOException {
+        Query m = mainQuery.rewrite(searcher);
+        Query r = reRankQuery.rewrite(searcher);
 
         if (m != mainQuery || r != reRankQuery) {
             return new QuerqyReRankQuery(m, r, reRankNumDocs, reRankWeight);
         }
-        return super.rewrite(reader);
+        return super.rewrite(searcher);
     }
 
     @Override
@@ -133,8 +132,9 @@ public class QuerqyReRankQuery extends RankQuery {
             this.rankWeight = reRankQuery.createWeight(searcher, scoreMode, boost);
         }
 
-        public Scorer scorer(final LeafReaderContext context) throws IOException {
-            return mainWeight.scorer(context);
+        @Override
+        public ScorerSupplier scorerSupplier(final LeafReaderContext context) throws IOException {
+            return mainWeight.scorerSupplier(context);
         }
 
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
@@ -184,11 +184,11 @@ public class QuerqyReRankQuery extends RankQuery {
             Sort sort = cmd.getSort();
             final int max = Math.max(reRankNumDocs, length);
             if (sort == null) {
-                this.mainCollector = TopScoreDocCollector.create(max, max);
+                this.mainCollector = new TopScoreDocCollectorManager(max, max).newCollector();
                 this.sort = null;
             } else {
                 this.sort = sort.rewrite(searcher);
-                this.mainCollector = TopFieldCollector.create(this.sort, max, max);
+                this.mainCollector = new TopFieldCollectorManager(this.sort, max, max).newCollector();
             }
             this.searcher = searcher;
             this.reRankWeight = reRankWeight;
@@ -215,7 +215,7 @@ public class QuerqyReRankQuery extends RankQuery {
 
                 final TopDocs mainDocs = mainCollector.topDocs(0, Math.max(reRankNumDocs, length));
 
-                if (mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
+                if (mainDocs.totalHits.value() == 0 || mainDocs.scoreDocs.length == 0) {
                     return mainDocs;
                 }
 

@@ -14,8 +14,8 @@ import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CO
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_PROTECTED_WORDS;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_REVERSE_COMPOUND_TRIGGER_WORDS;
 
-import querqy.lucene.contrib.rewrite.wordbreak.Morphology;
-import querqy.lucene.contrib.rewrite.wordbreak.SuffixGroupMorphology;
+import querqy.rewriter.wordbreak.Morphology;
+import querqy.rewriter.wordbreak.SuffixGroupMorphology;
 import querqy.solr.RewriterConfigRequestBuilder;
 
 import java.util.Arrays;

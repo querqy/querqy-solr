@@ -19,7 +19,7 @@ import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CO
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_REVERSE_COMPOUND_TRIGGER_WORDS;
 
 import org.junit.Test;
-import querqy.lucene.contrib.rewrite.wordbreak.SuffixGroupMorphology;
+import querqy.rewriter.wordbreak.SuffixGroupMorphology;
 
 import java.util.List;
 import java.util.Map;

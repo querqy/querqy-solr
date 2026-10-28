@@ -3,10 +3,10 @@ package querqy.solr.rewriter.numberunit;
 import querqy.model.BoostQuery;
 import querqy.model.Clause;
 import querqy.model.StringRawQuery;
-import querqy.rewrite.contrib.numberunit.NumberUnitQueryCreator;
-import querqy.rewrite.contrib.numberunit.model.LinearFunction;
-import querqy.rewrite.contrib.numberunit.model.NumberUnitDefinition;
-import querqy.rewrite.contrib.numberunit.model.PerUnitNumberUnitDefinition;
+import querqy.rewriter.numberunit.NumberUnitQueryCreator;
+import querqy.rewriter.numberunit.model.LinearFunction;
+import querqy.rewriter.numberunit.model.NumberUnitDefinition;
+import querqy.rewriter.numberunit.model.PerUnitNumberUnitDefinition;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

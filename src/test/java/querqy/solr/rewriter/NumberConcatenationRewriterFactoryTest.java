@@ -32,7 +32,7 @@ public class NumberConcatenationRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewrite.contrib.NumberConcatenationRewriterFactory.class);
+        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.NumberConcatenationRewriterFactory.class);
         Assertions.assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNullOrEmpty();
     }
 }

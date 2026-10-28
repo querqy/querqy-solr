@@ -22,7 +22,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.RankQuery;
 import querqy.lucene.LuceneSearchEngineRequestAdapter;
 import querqy.lucene.rewrite.infologging.InfoLoggingContext;
-import querqy.rewrite.commonrules.model.DecorateInstruction;
+import querqy.rewriter.commonrules.model.DecorateInstruction;
 
 import static querqy.solr.ResponseSink.QUERQY_INFO_LOG;
 
@@ -117,7 +117,7 @@ public class QuerqyQueryComponent extends QueryComponent {
     public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
         super.handleResponses(rb, sreq);
 
-        if (rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+        if (rb.getStage() != ResponseBuilder.STAGE_EXECUTE_QUERY) {
             return;
         }
 

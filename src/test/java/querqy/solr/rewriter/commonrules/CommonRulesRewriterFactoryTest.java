@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import querqy.lucene.GZIPAwareResourceLoader;
 import querqy.rewrite.RewriterFactory;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class CommonRulesRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        assertThat(rewriterFactory).isInstanceOf(querqy.rewrite.commonrules.SimpleCommonRulesRewriterFactory.class);
+        assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.commonrules.SimpleCommonRulesRewriterFactory.class);
         assertThat(factory.validateConfiguration(config)).isNull();
 
         assertThat(config.get(CONF_ALLOW_BOOLEAN_INPUT)).isEqualTo(false);

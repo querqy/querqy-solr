@@ -100,7 +100,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
 
         try {
             // We don't add a watcher here but observe the inventoryPath and the individual rewriters
-            zkClient.makePath(dataPath, false, true);
+            zkClient.makePath(dataPath, false);
         } catch (final Exception e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                     "Could not assure rewriter config path in ZK");
@@ -113,11 +113,10 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
     @Override
     protected synchronized void doClose() {
         LOG.info("Closing ZkRewriterContainer");
-        final ZooKeeper zooKeeper = zkClient.getZooKeeper();
         if (inventoryPathWatcher != null) {
             try {
-                zooKeeper.removeWatches(inventoryPath, inventoryPathWatcher, Watcher.WatcherType.Children,
-                        true);
+                zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper()
+                        .removeWatches(inventoryPath, inventoryPathWatcher, Watcher.WatcherType.Children, true);
                 inventoryPathWatcher = null;
             } catch (final Exception e) {
                 LOG.warn("Error trying to remove watcher for " + inventoryPath + ". This might lead to a memory leak",
@@ -128,7 +127,8 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
 
         for (final Map.Entry<String, Watcher> entry : rewriterWatchers.entrySet()) {
             try {
-                zooKeeper.removeWatches(rewriterStorageInfoNode(entry.getKey()), entry.getValue(), Watcher.WatcherType.Data,
+                zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper()
+                        .removeWatches(rewriterStorageInfoNode(entry.getKey()), entry.getValue(), Watcher.WatcherType.Data,
                         true);
             } catch (final Exception e) {
                 LOG.warn("Error trying to remove watcher for rewriterID " + entry.getKey() +
@@ -171,7 +171,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
                 final int len = Math.min(maxFileSize, bytes.length - offset);
                 
                 try {
-                    zkClient.makePath(path, Arrays.copyOfRange(bytes, offset, (offset + len)), true);
+                    zkClient.makePath(path, Arrays.copyOfRange(bytes, offset, (offset + len)));
                     offset += len;
                     uuids.add(uuid);
                 } catch (InterruptedException | KeeperException e) {
@@ -183,7 +183,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
         final String rewriterStorageInfoNode = rewriterStorageInfoNode(rewriterId);
         final Stat stat;
         try {
-            stat = zkClient.exists(rewriterStorageInfoNode, null, true);
+            stat = zkClient.exists(rewriterStorageInfoNode, (Watcher) null);
         } catch (final InterruptedException | KeeperException e) {
             throw new IOException("Error saving rewriter " + rewriterId, e);
         }
@@ -195,13 +195,13 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
             if (stat == null) {
 
                 try {
-                    zkClient.makePath(rewriterStorageInfoNode, infoData, CreateMode.PERSISTENT, null, true, true);
+                    zkClient.makePath(rewriterStorageInfoNode, infoData, CreateMode.PERSISTENT, null, true);
                 } catch (final KeeperException.NodeExistsException e) {
                     for (final String uuid : uuids) {
                         // undo saving parts
                         final String rewriterDataPath = rewriterDataPath(rewriterId, dataDirectory, uuid);
                         try {
-                            zkClient.delete(rewriterDataPath, -1, true);
+                            zkClient.delete(rewriterDataPath, -1);
                         } catch (final Exception exception) {
                             throw new IOException("Rewriter " + rewriterId +
                                     " already exists. In addition, could not undo saving to " + rewriterDataPath,
@@ -215,14 +215,14 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
             } else {
 
                 final RewriterStorageInfo oldStorageInfo = RewriterStorageInfo.fromString(
-                        new String(zkClient.getData(rewriterStorageInfoNode, null, stat, true)));
+                        new String(zkClient.getData(rewriterStorageInfoNode, null, stat)));
 
-                zkClient.setData(rewriterStorageInfoNode, infoData, stat.getVersion(), true);
+                zkClient.setData(rewriterStorageInfoNode, infoData, stat.getVersion());
 
                 for (final String oldUuid : oldStorageInfo.uuids) {
                     final String oldPath = rewriterDataPath(rewriterId, oldStorageInfo.dataDir, oldUuid);
                     try {
-                        zkClient.delete(oldPath, -1, true);
+                        zkClient.delete(oldPath, -1);
                     } catch (final Exception e) {
                         LOG.error("Could not delete old rewriter data: " + oldPath, e);
                     }
@@ -240,7 +240,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
 
         try {
             return RewriterStorageInfo.fromString(new String(zkClient.getData(rewriterStorageInfoNode(rewriterId), watcher,
-                    null, true)));
+                    null)));
         } catch (final KeeperException e) {
             if (KeeperException.Code.NONODE == e.code()) {
                 throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Rewriter " + rewriterId + " not found.");
@@ -269,7 +269,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
         final RewriterStorageInfo storageInfo = readRewriterStorageInfo(rewriterId, null);//newRewriterWatcher(rewriterId));
 
         try {
-            zkClient.delete(rewriterStorageInfoNode(rewriterId), -1, true);
+            zkClient.delete(rewriterStorageInfoNode(rewriterId), -1);
         } catch (final KeeperException e) {
             if (KeeperException.Code.NONODE == e.code()) {
                 throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Rewriter " + rewriterId + " not found.");
@@ -282,7 +282,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
 
         try {
             for (final String oldUuid : storageInfo.uuids) {
-                zkClient.delete(rewriterDataPath(rewriterId, storageInfo.dataDir, oldUuid), -1, true);
+                zkClient.delete(rewriterDataPath(rewriterId, storageInfo.dataDir, oldUuid), -1);
             }
         } catch (final InterruptedException | KeeperException e) {
             LOG.error("The rewriter " + rewriterId + " was deleted but not all data could be removed from ZK", e);
@@ -313,7 +313,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
 
         final List<String> children;
         try {
-            children = zkClient.getChildren(inventoryPath, newInventoryPathWatcher(), true).stream() // get all children except for the .data subdirectory
+            children = zkClient.getChildren(inventoryPath, newInventoryPathWatcher()).stream() // get all children except for the .data subdirectory
                     .filter(child -> !(child.startsWith(".")
                             || (child.equals(dataDirectory)
                             || (child.startsWith("__")))))
@@ -343,14 +343,14 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
         // We do not manipulate the 'rewriters' map but replace it with an updated map to avoid locking/synchronization
 
         final Map<String, RewriterFactoryContext> newRewriters = new HashMap<>(rewriters);
-        final ZooKeeper zooKeeper = zkClient.getZooKeeper();
         for (final String rewriterId : known) {
             LOG.info("Unloading rewriter: {}", rewriterId);
             newRewriters.remove(rewriterId);
             final Watcher oldWatcher = rewriterWatchers.remove(rewriterId);
             if (oldWatcher != null) {
                 try {
-                    zooKeeper.removeWatches(rewriterStorageInfoNode(rewriterId), oldWatcher, Watcher.WatcherType.Data, true);
+                    zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper()
+                            .removeWatches(rewriterStorageInfoNode(rewriterId), oldWatcher, Watcher.WatcherType.Data, true);
                 } catch (final Exception e) {
                     LOG.warn("Error trying to remove watcher for rewriterID " + rewriterId +
                             ". This might lead to a memory leak", e);
@@ -389,7 +389,7 @@ public class ZkRewriterContainer extends RewriterContainer<ZkSolrResourceLoader>
             for (final String uuid : storageInfo.uuids) {
                 try {
                     final byte[] data = zkClient.getData(rewriterDataPath(rewriterId, storageInfo.dataDir, uuid), null,
-                            null, true);
+                            null);
                     bos.write(data);
                 } catch (final KeeperException e) {
                     if (KeeperException.Code.NONODE == e.code()) {

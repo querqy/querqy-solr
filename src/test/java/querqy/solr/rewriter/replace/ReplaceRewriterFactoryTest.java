@@ -10,7 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import querqy.lucene.GZIPAwareResourceLoader;
 import querqy.rewrite.RewriterFactory;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
 import querqy.solr.StandaloneSolrTestSupport;
 
 import java.io.IOException;
@@ -243,7 +243,7 @@ public class ReplaceRewriterFactoryTest extends SolrTestCaseJ4 {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewrite.contrib.ReplaceRewriterFactory.class);
+        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.replace.ReplaceRewriterFactory.class);
         Assertions.assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNull();
     }
     

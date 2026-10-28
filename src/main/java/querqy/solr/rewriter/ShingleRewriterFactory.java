@@ -19,7 +19,7 @@ public class ShingleRewriterFactory extends SolrRewriterFactoryAdapter implement
 
     public static final String CONF_ACCEPT_GENERATED_TERMS = "acceptGeneratedTerms";
 
-    querqy.rewrite.contrib.ShingleRewriterFactory factory = null;
+    querqy.rewriter.ShingleRewriterFactory factory = null;
 
     public ShingleRewriterFactory(final String rewriterId) {
         super(rewriterId);
@@ -29,8 +29,8 @@ public class ShingleRewriterFactory extends SolrRewriterFactoryAdapter implement
     public void configure(final Map<String, Object> config) throws SolrException {
 
         factory = ConfigUtils.getBoolArg(config, CONF_ACCEPT_GENERATED_TERMS)
-                .map(accept -> new querqy.rewrite.contrib.ShingleRewriterFactory(rewriterId, accept))
-                .orElseGet(() -> new querqy.rewrite.contrib.ShingleRewriterFactory(rewriterId));
+                .map(accept -> new querqy.rewriter.ShingleRewriterFactory(rewriterId, accept))
+                .orElseGet(() -> new querqy.rewriter.ShingleRewriterFactory(rewriterId));
 
     }
 

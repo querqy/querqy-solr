@@ -9,7 +9,7 @@ import static querqy.solr.rewriter.replace.ReplaceRewriterFactory.CONF_RHS_QUERY
 import static querqy.solr.rewriter.replace.ReplaceRewriterFactory.CONF_RULES;
 
 import org.junit.Test;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
 
 import java.util.List;
 import java.util.Map;

@@ -107,6 +107,10 @@ public class ClassicRewriteChainLoader extends AbstractSolrEventListener {
                                 .parseConfigurationToRequestHandlerBody((NamedList<Object>) config, resourceLoader);
 
                         final SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
+                            @Override
+                            public String getHttpMethod() {
+                                return "POST";
+                            }
                         };
                         // since Solr 9.11, SolrQueryRequest.getHttpMethod() fails if the context has no HTTP method
                         req.getContext().put("httpMethod", SolrRequest.METHOD.POST);

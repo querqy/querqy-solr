@@ -5,11 +5,11 @@ import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import querqy.rewrite.RewriterFactory;
-import querqy.rewrite.commonrules.QuerqyParserFactory;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
-import querqy.rewrite.commonrules.model.BoostInstruction.BoostMethod;
-import querqy.rewrite.commonrules.select.ExpressionCriteriaSelectionStrategyFactory;
-import querqy.rewrite.commonrules.select.SelectionStrategyFactory;
+import querqy.rewriter.commonrules.QuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.model.BoostInstruction.BoostMethod;
+import querqy.rewriter.commonrules.select.ExpressionCriteriaSelectionStrategyFactory;
+import querqy.rewriter.commonrules.select.SelectionStrategyFactory;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessor;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessorFactory;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessorType;
@@ -17,6 +17,7 @@ import querqy.solr.FactoryAdapter;
 import querqy.solr.SolrRewriterFactoryAdapter;
 import querqy.solr.rewriter.ClassicConfigurationParser;
 import querqy.solr.utils.ConfigUtils;
+import querqy.solr.utils.JacksonJsonProvider;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -76,7 +77,7 @@ public class CommonRulesRewriterFactory extends SolrRewriterFactoryAdapter imple
                 .orElse(DEFAULT_LOOKUP_PREPROCESSOR_TYPE);
 
         try {
-            delegate = new querqy.rewrite.commonrules.SimpleCommonRulesRewriterFactory(
+            delegate = new querqy.rewriter.commonrules.SimpleCommonRulesRewriterFactory(
                     rewriterId,
                     new StringReader(rules),
                     allowBooleanInput,
@@ -85,7 +86,8 @@ public class CommonRulesRewriterFactory extends SolrRewriterFactoryAdapter imple
                     selectionStrategyFactories,
                     DEFAULT_SELECTION_STRATEGY_FACTORY,
                     buildTermCache,
-                    lookupPreprocessorType);
+                    lookupPreprocessorType,
+                    JacksonJsonProvider.INSTANCE);
         } catch (final IOException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                     "Could not create delegate factory ", e);
@@ -135,7 +137,7 @@ public class CommonRulesRewriterFactory extends SolrRewriterFactoryAdapter imple
 
 
         try {
-            new querqy.rewrite.commonrules.SimpleCommonRulesRewriterFactory(
+            new querqy.rewriter.commonrules.SimpleCommonRulesRewriterFactory(
                     rewriterId,
                     new StringReader(rules),
                     allowBooleanInput,
@@ -144,7 +146,8 @@ public class CommonRulesRewriterFactory extends SolrRewriterFactoryAdapter imple
                     selectionStrategyFactories,
                     DEFAULT_SELECTION_STRATEGY_FACTORY,
                     buildTermCache,
-                    lookupPreprocessorType
+                    lookupPreprocessorType,
+                    JacksonJsonProvider.INSTANCE
             );
         } catch (final IOException e) {
             return Collections.singletonList("Cannot create rewriter: " + e.getMessage());

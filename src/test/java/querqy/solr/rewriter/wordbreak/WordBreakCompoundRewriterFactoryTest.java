@@ -43,7 +43,7 @@ public class WordBreakCompoundRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        assertThat(rewriterFactory).isInstanceOf(querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory.class);
+        assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory.class);
         assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNull();
     }
 

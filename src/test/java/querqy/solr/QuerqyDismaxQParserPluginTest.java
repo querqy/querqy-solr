@@ -32,7 +32,7 @@ import querqy.rewrite.QueryRewriter;
 import querqy.rewrite.RewriteChain;
 import querqy.rewrite.RewriterFactory;
 import querqy.rewrite.SearchEngineRequestAdapter;
-import querqy.rewrite.commonrules.model.BoostInstruction;
+import querqy.rewriter.commonrules.model.BoostInstruction;
 
 import java.util.*;
 
@@ -1075,8 +1075,7 @@ public class QuerqyDismaxQParserPluginTest extends SolrTestCaseJ4 {
         public RewriterFactory getRewriterFactory() {
             return new RewriterFactory(rewriterId) {
                 @Override
-                public QueryRewriter createRewriter(final ExpandedQuery input,
-                                                    final SearchEngineRequestAdapter searchEngineRequestAdapter) {
+                public QueryRewriter createRewriter(final SearchEngineRequestAdapter searchEngineRequestAdapter) {
                     return (query, requestAdapter) -> {
                         query.setUserQuery(new MatchAllQuery());
                         query.addFilterQuery(WhiteSpaceQuerqyParser.parseString("a"));
@@ -1114,8 +1113,7 @@ public class QuerqyDismaxQParserPluginTest extends SolrTestCaseJ4 {
         public RewriterFactory getRewriterFactory() {
             return new RewriterFactory(rewriterId) {
                 @Override
-                public QueryRewriter createRewriter(final ExpandedQuery input,
-                                                    final SearchEngineRequestAdapter searchEngineRequestAdapter) {
+                public QueryRewriter createRewriter(final SearchEngineRequestAdapter searchEngineRequestAdapter) {
                     return (query, requestAdapter) -> {
                         query.addMultiplicativeBoostQuery(UP_BOOST);
                         query.addMultiplicativeBoostQuery(DOWN_BOOST);

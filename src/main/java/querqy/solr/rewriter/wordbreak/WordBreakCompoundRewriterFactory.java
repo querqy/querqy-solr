@@ -2,9 +2,10 @@ package querqy.solr.rewriter.wordbreak;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.request.SolrRequestInfo;
-import querqy.lucene.contrib.rewrite.wordbreak.Morphology;
-import querqy.lucene.contrib.rewrite.wordbreak.MorphologyProvider;
+import querqy.rewriter.wordbreak.Morphology;
+import querqy.rewriter.wordbreak.MorphologyProvider;
 import querqy.rewrite.RewriterFactory;
+import querqy.lucene.LuceneTermCorpus;
 import querqy.solr.SolrRewriterFactoryAdapter;
 import querqy.solr.rewriter.ClassicConfigurationParser;
 import querqy.solr.utils.ConfigUtils;
@@ -39,7 +40,7 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
     private static final boolean DEFAULT_VERIFY_DECOMPOUND_COLLATION = false;
 
 
-    private querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory delegate = null;
+    private querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory delegate = null;
     private final MorphologyProvider morphologyProvider;
 
     public WordBreakCompoundRewriterFactory(final String rewriterId) {
@@ -102,8 +103,8 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
         // for backwards compatibility, compoundMorphology uses DEFAULT unless explicitly overridden
         final String compoundMorphologyName = ConfigUtils.getArg(compoundConf, CONF_MORPHOLOGY, "DEFAULT");
 
-        delegate = new querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory(rewriterId,
-                indexReaderSupplier, indexField, lowerCaseInput, minSuggestionFreq, maxCombineLength,
+        delegate = new querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory(rewriterId,
+                new LuceneTermCorpus(indexReaderSupplier, indexField), lowerCaseInput, minSuggestionFreq,
                 minBreakLength, reverseCompoundTriggerWords, alwaysAddReverseCompounds, maxDecompoundExpansions,
                 verifyDecompoundCollation, protectedWords, decompoundMorphologyName, compoundMorphologyName);
     }

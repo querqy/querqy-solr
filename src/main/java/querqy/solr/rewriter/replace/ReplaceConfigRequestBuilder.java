@@ -2,7 +2,7 @@ package querqy.solr.rewriter.replace;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import querqy.rewrite.commonrules.QuerqyParserFactory;
+import querqy.rewriter.commonrules.QuerqyParserFactory;
 import querqy.solr.RewriterConfigRequestBuilder;
 
 import java.io.BufferedReader;
