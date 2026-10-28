@@ -2,6 +2,8 @@ package querqy.solr.rewriter.wordbreak;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import querqy.rewriter.wordbreak.Morphology;
 import querqy.rewriter.wordbreak.MorphologyProvider;
 import querqy.rewrite.RewriterFactory;
@@ -18,8 +20,14 @@ import java.util.function.Supplier;
 
 public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter implements ClassicConfigurationParser {
 
+    private static final Logger LOG = LoggerFactory.getLogger(WordBreakCompoundRewriterFactory.class);
+
     public static final String CONF_DICTIONARY_FIELD = "dictionaryField";
     public static final String CONF_MIN_SUGGESTION_FREQ = "minSuggestionFrequency";
+    /**
+     * @deprecated Ignored since querqy-core 4, which no longer limits the length of combined terms.
+     */
+    @Deprecated
     public static final String CONF_MAX_COMBINE_WORD_LENGTH = "maxCombineWordLength";
     public static final String CONF_MIN_BREAK_LENGTH = "minBreakLength";
     public static final String CONF_LOWER_CASE_INPUT = "lowerCaseInput";
@@ -34,7 +42,6 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
 
 
     private static final int DEFAULT_MIN_SUGGESTION_FREQ = 1;
-    private static final int DEFAULT_MAX_COMBINE_WORD_LENGTH = 30;
     private static final int DEFAULT_MIN_BREAK_LENGTH = 3;
     private static final int DEFAULT_MAX_DECOMPOUND_EXPANSIONS = 3;
     private static final boolean DEFAULT_VERIFY_DECOMPOUND_COLLATION = false;
@@ -55,9 +62,11 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
         final Integer minSuggestionFreq = ConfigUtils.getArg(config, CONF_MIN_SUGGESTION_FREQ,
                 DEFAULT_MIN_SUGGESTION_FREQ);
 
-        // the maximum length of a combined term
-        final Integer maxCombineLength = ConfigUtils.getArg(config, CONF_MAX_COMBINE_WORD_LENGTH,
-                DEFAULT_MAX_COMBINE_WORD_LENGTH);
+        if (config.containsKey(CONF_MAX_COMBINE_WORD_LENGTH)) {
+            LOG.warn("Rewriter {}: configuration property '{}' is deprecated and ignored. The word break compound " +
+                    "rewriter of querqy-core 4 no longer limits the length of combined terms.", rewriterId,
+                    CONF_MAX_COMBINE_WORD_LENGTH);
+        }
 
         // the minimum break term length
         final Integer minBreakLength = ConfigUtils.getArg(config, CONF_MIN_BREAK_LENGTH, DEFAULT_MIN_BREAK_LENGTH);

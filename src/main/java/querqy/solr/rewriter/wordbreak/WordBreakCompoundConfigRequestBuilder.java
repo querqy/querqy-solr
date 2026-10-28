@@ -141,6 +141,10 @@ public class WordBreakCompoundConfigRequestBuilder extends RewriterConfigRequest
         return this;
     }
 
+    /**
+     * @deprecated Ignored since querqy-core 4, which no longer limits the length of combined terms.
+     */
+    @Deprecated
     public WordBreakCompoundConfigRequestBuilder maxCombineWordLength(final Integer maxCombineWordLength) {
         this.maxCombineWordLength = maxCombineWordLength;
         return this;
