@@ -60,6 +60,8 @@
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.6.0</maven-failsafe-plugin.version>
+        <!-- the surefire-junit4 provider is not published for 3.6.x -->
+        <surefire-junit4.version>3.5.6</surefire-junit4.version>
 
         <querqy-lucene.version>5.13.lucene1050.1</querqy-lucene.version>
 
@@ -304,7 +306,7 @@
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-junit4</artifactId>
-                        <version>${maven-failsafe-plugin.version}</version>
+                        <version>${surefire-junit4.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
