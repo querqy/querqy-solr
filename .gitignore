@@ -16,4 +16,4 @@ target/*
 
 #files
 *.iml
-
+.mcp.json
