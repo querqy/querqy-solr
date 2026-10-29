@@ -45,7 +45,7 @@ public class NumberUnitRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewrite.contrib.NumberUnitRewriterFactory.class);
+        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.numberunit.NumberUnitRewriterFactory.class);
         Assertions.assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_PROPERTY))).isNullOrEmpty();
     }
 

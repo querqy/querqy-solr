@@ -1,16 +1,23 @@
 package querqy.solr;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SolrCache;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+
+import static querqy.solr.CacheStatsTestSupport.CacheStats;
+import static querqy.solr.CacheStatsTestSupport.readCacheStats;
+
 @SolrTestCaseJ4.SuppressSSL
 public class SolrTermQueryCacheTest extends SolrTestCaseJ4 {
+
+    private static final String CACHE_NAME = "querqyTermQueryCache";
 
     public void index() throws Exception {
 
@@ -32,25 +39,16 @@ public class SolrTermQueryCacheTest extends SolrTestCaseJ4 {
         clearIndex();
         index();
     }
-     
-    @Test
-    public void testThatCacheIsAvailable() throws Exception {
-         
-         SolrQueryRequest req = req(
-               CommonParams.QT, "/admin/mbeans",
-               "cat", "CACHE",
-               "stats", "true"
-               );
-         assertQ("Missing querqy cache",
-               req,
-               "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']");
 
-         req.close();
+    @Test
+    public void testThatCacheIsAvailable() throws IOException {
+        SolrCache<?, ?> cache = h.getCore().withSearcher(s -> s.getCache(CACHE_NAME));
+        assertNotNull("Missing querqy cache", cache);
     }
-    
+
     @Test
     public void testThatTermQueriesArePutIntoAndServedFromCache() throws Exception {
-        
+
         String q = "c";
 
         SolrQueryRequest req = req("q", q,
@@ -59,66 +57,34 @@ public class SolrTermQueryCacheTest extends SolrTestCaseJ4 {
               DisMaxParams.TIE, "0.1",
               "defType", "querqy",
               "debugQuery", "true"
-        );        
-        
-        assertQ("Unexpected query result while caching", 
-                req, 
+        );
+
+        assertQ("Unexpected query result while caching",
+                req,
                 "//result[@name='response'][@numFound='1']");
         req.close();
-        
-         
-        SolrQueryRequest reqStats = req(
-               CommonParams.QT, "/admin/mbeans",
-               "cat", "CACHE",
-               "stats", "true"
-               );
-        assertQ("Missing querqy cache",
-                reqStats,
-              "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                      + "/lst[@name='stats']/long[@name='CACHE.searcher.querqyTermQueryCache.lookups'][text()='2']");
-        assertQ("Missing querqy cache",
-                reqStats,
-              "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                      + "/lst[@name='stats']/long[@name='CACHE.searcher.querqyTermQueryCache.hits'][text()='0']");
-        assertQ("Missing querqy cache",
-                reqStats,
-              "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                      + "/lst[@name='stats']/int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='2']");
 
-        reqStats.close();
-        
+        CacheStats stats1 = readCacheStats(h.getCore(), CACHE_NAME);
+        assertEquals("lookups after first query", 2L, stats1.lookups());
+        assertEquals("hits after first query", 0L, stats1.hits());
+        assertEquals("size after first query", 2L, stats1.size());
+
         SolrQueryRequest req2 = req("q", q,
                 DisMaxParams.QF, "f1 f2",
                 QueryParsing.OP, "OR",
                 DisMaxParams.TIE, "0.1",
                 "defType", "querqy",
                 "debugQuery", "true"
-          );        
-          
-          assertQ("Unexpected query result while using cache", 
-                  req2, 
-                  "//result[@name='response'][@numFound='1']");
-          req2.close();
-          
-           
-          SolrQueryRequest reqStats2 = req(
-                 CommonParams.QT, "/admin/mbeans",
-                 "cat", "CACHE",
-                 "stats", "true"
-                 );
-          assertQ("Missing querqy cache",
-                  reqStats2,
-                "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                        + "/lst[@name='stats']/long[@name='CACHE.searcher.querqyTermQueryCache.lookups'][text()='4']");
-          assertQ("Missing querqy cache",
-                  reqStats2,
-                "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                        + "/lst[@name='stats']/long[@name='CACHE.searcher.querqyTermQueryCache.hits'][text()='2']");
-          assertQ("Missing querqy cache",
-                  reqStats2,
-                "//lst[@name='CACHE']/lst[@name='querqyTermQueryCache']"
-                        + "/lst[@name='stats']/int[@name='CACHE.searcher.querqyTermQueryCache.size'][text()='2']");
+        );
 
-          reqStats2.close();
+        assertQ("Unexpected query result while using cache",
+                req2,
+                "//result[@name='response'][@numFound='1']");
+        req2.close();
+
+        CacheStats stats2 = readCacheStats(h.getCore(), CACHE_NAME);
+        assertEquals("lookups after second query", 4L, stats2.lookups());
+        assertEquals("hits after second query", 2L, stats2.hits());
+        assertEquals("size after second query", 2L, stats2.size());
     }
 }

@@ -32,7 +32,7 @@ public class StandAloneRewriterContainer extends RewriterContainer<SolrResourceL
     @Override
     protected void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
 
-        final File configDir = new File(resourceLoader.getConfigDir());
+        final File configDir = resourceLoader.getConfigPath().toFile();
         final File querqyDir = new File(configDir, IO_PATH);
         if (querqyDir.exists()) {
             if (!(querqyDir.isDirectory() || querqyDir.canWrite())) {

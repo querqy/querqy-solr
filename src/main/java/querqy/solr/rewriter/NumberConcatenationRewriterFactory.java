@@ -21,7 +21,7 @@ public class NumberConcatenationRewriterFactory extends SolrRewriterFactoryAdapt
 
     public static  final int DEFAULT_MIN_LENGTH_QUERY_TERM = 3;
 
-    private querqy.rewrite.contrib.NumberConcatenationRewriterFactory factory = null;
+    private querqy.rewriter.NumberConcatenationRewriterFactory factory = null;
 
     public NumberConcatenationRewriterFactory(final String rewriterId) {
         super(rewriterId);
@@ -35,7 +35,7 @@ public class NumberConcatenationRewriterFactory extends SolrRewriterFactoryAdapt
         final Integer minimumLength = ConfigUtils.getArg(config, CONF_MIN_LENGTH_QUERY_TERM,
                 DEFAULT_MIN_LENGTH_QUERY_TERM);
 
-        factory = new querqy.rewrite.contrib.NumberConcatenationRewriterFactory(rewriterId, accept, minimumLength);
+        factory = new querqy.rewriter.NumberConcatenationRewriterFactory(rewriterId, accept, minimumLength);
     }
 
     @Override

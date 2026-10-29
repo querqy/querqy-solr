@@ -22,7 +22,7 @@ public interface ClassicConfigurationParser {
                                                                        final ResourceLoader resourceLoader) {
         final Map<String, Object> result = new HashMap<>();
         if (configuration != null) {
-            final Map<String, Object> origConf = configuration.asShallowMap();
+            final Map<String, Object> origConf = configuration.asMap(0);
             final Map<String, Object> conf = new HashMap<>();
             for (final Map.Entry<String, Object> entry : origConf.entrySet()) {
                final int dotIndex = entry.getKey().indexOf(".");

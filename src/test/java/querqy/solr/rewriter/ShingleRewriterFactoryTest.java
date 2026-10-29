@@ -32,7 +32,7 @@ public class ShingleRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewrite.contrib.ShingleRewriterFactory.class);
+        Assertions.assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.ShingleRewriterFactory.class);
         Assertions.assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNullOrEmpty();
     }
 }

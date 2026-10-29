@@ -1,11 +1,11 @@
 package querqy.solr.rewriter.commonrules;
 
 
-import static querqy.rewrite.commonrules.select.RuleSelectionParams.getFilterParamName;
-import static querqy.rewrite.commonrules.select.RuleSelectionParams.getIsUseLevelsForLimitParamName;
-import static querqy.rewrite.commonrules.select.RuleSelectionParams.getLimitParamName;
-import static querqy.rewrite.commonrules.select.RuleSelectionParams.getSortParamName;
-import static querqy.rewrite.commonrules.select.RuleSelectionParams.getStrategyParamName;
+import static querqy.rewriter.commonrules.select.RuleSelectionParams.getFilterParamName;
+import static querqy.rewriter.commonrules.select.RuleSelectionParams.getIsUseLevelsForLimitParamName;
+import static querqy.rewriter.commonrules.select.RuleSelectionParams.getLimitParamName;
+import static querqy.rewriter.commonrules.select.RuleSelectionParams.getSortParamName;
+import static querqy.rewriter.commonrules.select.RuleSelectionParams.getStrategyParamName;
 import static querqy.solr.QuerqyQParserPlugin.PARAM_REWRITERS;
 import static querqy.solr.StandaloneSolrTestSupport.withCommonRulesRewriter;
 
@@ -15,7 +15,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import querqy.rewrite.commonrules.select.SelectionStrategyFactory;
+import querqy.rewriter.commonrules.select.SelectionStrategyFactory;
 import querqy.solr.FactoryAdapter;
 
 import java.util.HashMap;

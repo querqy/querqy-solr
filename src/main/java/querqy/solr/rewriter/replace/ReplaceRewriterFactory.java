@@ -5,8 +5,8 @@ import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import querqy.rewrite.RewriterFactory;
-import querqy.rewrite.commonrules.QuerqyParserFactory;
-import querqy.rewrite.commonrules.WhiteSpaceQuerqyParserFactory;
+import querqy.rewriter.commonrules.QuerqyParserFactory;
+import querqy.rewriter.commonrules.WhiteSpaceQuerqyParserFactory;
 import querqy.solr.rewriter.ClassicConfigurationParser;
 import querqy.solr.utils.ConfigUtils;
 import querqy.solr.SolrRewriterFactoryAdapter;
@@ -36,7 +36,7 @@ public class ReplaceRewriterFactory extends SolrRewriterFactoryAdapter implement
     private static final String DEFAULT_INPUT_DELIMITER = "\t";
     private static final QuerqyParserFactory DEFAULT_RHS_QUERY_PARSER = new WhiteSpaceQuerqyParserFactory();
 
-    private querqy.rewrite.contrib.ReplaceRewriterFactory delegate = null;
+    private querqy.rewriter.replace.ReplaceRewriterFactory delegate = null;
 
     public ReplaceRewriterFactory(final String rewriterId) {
         super(rewriterId);
@@ -55,7 +55,7 @@ public class ReplaceRewriterFactory extends SolrRewriterFactoryAdapter implement
                 config, CONF_RHS_QUERY_PARSER, DEFAULT_RHS_QUERY_PARSER);
 
         try {
-            delegate = new querqy.rewrite.contrib.ReplaceRewriterFactory(rewriterId, rulesReader, ignoreCase,
+            delegate = new querqy.rewriter.replace.ReplaceRewriterFactory(rewriterId, rulesReader, ignoreCase,
                     inputDelimiter, querqyParser.createParser());
         } catch (final IOException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot parse previously validated " +
@@ -85,7 +85,7 @@ public class ReplaceRewriterFactory extends SolrRewriterFactoryAdapter implement
         }
 
         try {
-            new querqy.rewrite.contrib.ReplaceRewriterFactory(rewriterId, rulesReader, ignoreCase,
+            new querqy.rewriter.replace.ReplaceRewriterFactory(rewriterId, rulesReader, ignoreCase,
                     inputDelimiter, querqyParser.createParser());
         } catch (final IOException e) {
             return Collections.singletonList("Cannot create rewriter: " + e.getMessage());

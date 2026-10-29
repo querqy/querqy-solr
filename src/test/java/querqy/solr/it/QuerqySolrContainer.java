@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.SolrContainer;
 import org.testcontainers.utility.ComparableVersion;
@@ -36,7 +36,6 @@ public class QuerqySolrContainer extends SolrContainer {
 
     private final int numShards;
 
-    // TODO remove once TestContainers can deal with Solr >= 9.7
     // for version-specific adjustments
     private final ComparableVersion imageVersion;
 
@@ -64,13 +63,16 @@ public class QuerqySolrContainer extends SolrContainer {
                 String.format("/opt/solr/server/solr/configsets/%s", QUERQY_IT_CONFIGSET), BindMode.READ_ONLY);
     }
 
-    // TODO remove once TestContainers can deal with Solr >= 9.7
+    // version-specific command line for starting Solr with embedded ZooKeeper
     @Override
     protected void configure() {
         super.configure();
         final String command;
         // we assume that we always use ZK
-        if (this.imageVersion.isGreaterThanOrEqualTo("9.7.0")) {
+        if (this.imageVersion.isGreaterThanOrEqualTo("10.0.0")) {
+            // -DzkRun was replaced by solr.zookeeper.server.enabled in Solr 10
+            command = "-Dsolr.zookeeper.server.enabled=true --host localhost";
+        } else if (this.imageVersion.isGreaterThanOrEqualTo("9.7.0")) {
             command = "-DzkRun --host localhost";
         } else {
             command = "-DzkRun -h localhost";
@@ -130,7 +132,7 @@ public class QuerqySolrContainer extends SolrContainer {
      * returns a new SolrClient usable by tests
      */
     public SolrClient newSolrClient() {
-        return new Http2SolrClient.Builder(getSolrUrl()).build();
+        return new HttpJettySolrClient.Builder(getSolrUrl()).build();
     }
 
     public Path getTestDataPath() {

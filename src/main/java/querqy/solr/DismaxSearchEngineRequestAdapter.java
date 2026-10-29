@@ -24,7 +24,9 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import querqy.json.JsonProvider;
 import querqy.lucene.LuceneRawQuery;
+import querqy.solr.utils.JacksonJsonProvider;
 import querqy.lucene.PhraseBoosting;
 import querqy.lucene.PhraseBoosting.PhraseBoostFieldParams;
 import querqy.lucene.QuerySimilarityScoring;
@@ -187,6 +189,11 @@ public class DismaxSearchEngineRequestAdapter implements LuceneSearchEngineReque
         } else {
             return new InfoLoggingContext(infoLogging, this);
         }
+    }
+
+    @Override
+    public JsonProvider getJsonProvider() {
+        return JacksonJsonProvider.INSTANCE;
     }
 
     @Override
@@ -389,7 +396,7 @@ public class DismaxSearchEngineRequestAdapter implements LuceneSearchEngineReque
         }
 
         for (final BooleanClause clause : clauses) {
-            if ((clause.getQuery() instanceof BooleanQuery) && (clause.getOccur() != BooleanClause.Occur.MUST)) {
+            if ((clause.query() instanceof BooleanQuery) && (clause.occur() != BooleanClause.Occur.MUST)) {
                 return query; // seems to be a complex query with sub queries - do not
                 // apply mm
             }

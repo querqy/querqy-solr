@@ -143,7 +143,7 @@ public class TermQueryCachePreloader extends AbstractSolrEventListener implement
                 final Query query = termSubQueryFactory
                         .createQuery(ConstantFieldBoost.NORM_BOOST, new LuceneTermQueryBuilder());
                 final TopDocs topDocs = searcher.search(query, 1);
-                if (topDocs.totalHits.value < 1) {
+                if (topDocs.totalHits.value() < 1) {
                     cache.put(new CacheKey(field, term),
                             new TermQueryCacheValue(NeverMatchQueryFactory.FACTORY, PRMSQuery.NEVER_MATCH_PRMS_QUERY));
                 }

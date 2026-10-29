@@ -1,5 +1,6 @@
 package querqy.solr.rewriter.wordbreak;
 
+import querqy.rewriter.wordbreak.OptionalModifierPosition;
 import static querqy.solr.QuerqyQParserPlugin.PARAM_REWRITERS;
 import static querqy.solr.StandaloneSolrTestSupport.withCommonRulesRewriter;
 import static querqy.solr.StandaloneSolrTestSupport.withRewriter;
@@ -51,6 +52,12 @@ public class WordBreakCompoundRewriterTest extends SolrTestCaseJ4 {
         withRewriter(h.getCore(), "word_break_protected",  WordBreakCompoundRewriterFactory.class,
                 builder.buildConfig());
 
+        final WordBreakCompoundConfigRequestBuilder optionalModifierBuilder = new WordBreakCompoundConfigRequestBuilder()
+                .dictionaryField("f1").lowerCaseInput(true).verifyDecompoundCollation(true)
+                .optionalModifierPosition(OptionalModifierPosition.FIRST).optionalModifierBoost(2f);
+        withRewriter(h.getCore(), "word_break_optional_modifier", WordBreakCompoundRewriterFactory.class,
+                optionalModifierBuilder.buildConfig());
+
         addDocs();
 
     }
@@ -96,6 +103,27 @@ public class WordBreakCompoundRewriterTest extends SolrTestCaseJ4 {
                 "//doc/str[@name='id'][contains(.,'2')]"
         );
 
+
+        req.close();
+    }
+
+    @Test
+    public void testThatOptionalModifierMakesFirstPartOptional() {
+        // 'herren' becomes optional, 'jacke' is required: ids 2 and 4 contain 'jacke', but only 2 also has 'herren'
+        final SolrQueryRequest req = req("q", "herrenjacke",
+                DisMaxParams.QF, "f1 f2 f3",
+                DisMaxParams.MM, "100%",
+                "defType", "querqy",
+                "debugQuery", "on",
+                PARAM_REWRITERS, "word_break_optional_modifier"
+        );
+
+        assertQ("Optional modifier not applied",
+                req,
+                "//result[@name='response' and @numFound='2']",
+                "//result/doc[1]/str[@name='id'][.='2']",
+                "//result/doc[2]/str[@name='id'][.='4']"
+        );
 
         req.close();
     }

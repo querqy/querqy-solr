@@ -2,9 +2,9 @@ package querqy.solr.rewriter.commonrules;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import querqy.rewrite.commonrules.QuerqyParserFactory;
-import querqy.rewrite.commonrules.model.BoostInstruction;
-import querqy.rewrite.commonrules.select.SelectionStrategyFactory;
+import querqy.rewriter.commonrules.QuerqyParserFactory;
+import querqy.rewriter.commonrules.model.BoostInstruction;
+import querqy.rewriter.commonrules.select.SelectionStrategyFactory;
 import querqy.rewrite.lookup.preprocessing.LookupPreprocessorType;
 import querqy.solr.FactoryAdapter;
 import querqy.solr.RewriterConfigRequestBuilder;

@@ -29,14 +29,13 @@ public class ClassicRewriteChainLoaderTest extends AbstractQuerqySolrCloudTestCa
 
         configureCluster(4)
                 .addConfig("classic",
-                        getFile("solrcloud").toPath().resolve("configsets").resolve("classic").resolve("conf"))
+                        getFile("solrcloud").resolve("configsets").resolve("classic").resolve("conf"))
                 .configure();
 
         CollectionAdminRequest.createCollection(COLLECTION, "classic", 2, 1).process(cluster.getSolrClient());
         cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-        CLIENT = cluster.getSolrClient();
-        CLIENT.setDefaultCollection(COLLECTION);
+        CLIENT = cluster.getSolrClient(COLLECTION);
 
         waitForRecoveriesToFinish(CLIENT);
     }

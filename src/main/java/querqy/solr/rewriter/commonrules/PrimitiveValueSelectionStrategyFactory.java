@@ -1,7 +1,7 @@
 package querqy.solr.rewriter.commonrules;
 
-import querqy.rewrite.commonrules.select.SelectionStrategyFactory;
-import querqy.rewrite.commonrules.select.SelectionStrategy;
+import querqy.rewriter.commonrules.select.SelectionStrategyFactory;
+import querqy.rewriter.commonrules.select.SelectionStrategy;
 import querqy.solr.FactoryAdapter;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ public class PrimitiveValueSelectionStrategyFactory implements FactoryAdapter<Se
     @Override
     public SelectionStrategyFactory createFactory(final String strategyId, final Map<String, Object> args) {
         // TODO: pass strategyId
-        return new querqy.rewrite.commonrules.select.PrimitiveValueSelectionStrategyFactory();
+        return new querqy.rewriter.commonrules.select.PrimitiveValueSelectionStrategyFactory();
     }
 
     @Override

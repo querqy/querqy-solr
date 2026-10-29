@@ -1,8 +1,8 @@
 package querqy.solr.rewriter.commonrules;
 
-import querqy.rewrite.commonrules.select.SelectionStrategyFactory;
-import querqy.rewrite.commonrules.select.SelectionStrategy;
-import querqy.rewrite.commonrules.select.ExpressionCriteriaSelectionStrategyFactory;
+import querqy.rewriter.commonrules.select.SelectionStrategyFactory;
+import querqy.rewriter.commonrules.select.SelectionStrategy;
+import querqy.rewriter.commonrules.select.ExpressionCriteriaSelectionStrategyFactory;
 import querqy.solr.FactoryAdapter;
 
 import java.util.Map;

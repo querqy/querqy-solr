@@ -4,13 +4,13 @@ import static querqy.solr.QuerqyRewriterRequestHandler.ActionParam.DELETE;
 import static querqy.solr.QuerqyRewriterRequestHandler.ActionParam.GET;
 import static querqy.solr.QuerqyRewriterRequestHandler.ActionParam.SAVE;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import querqy.solr.utils.JsonUtil;
 
 import java.io.IOException;
@@ -121,13 +121,9 @@ public abstract class RewriterConfigRequestBuilder {
 
         public SaveRewriterConfigSolrRequest(final String requestHandlerName, final String rewriterId,
                                              final String payload) {
-            super(SolrRequest.METHOD.POST, requestHandlerName + "/" + rewriterId);
+            super(SolrRequest.METHOD.POST, requestHandlerName + "/" + rewriterId,
+                    SolrRequest.SolrRequestType.UNSPECIFIED);
             this.payload = payload;
-        }
-
-        @Override
-        public String getRequestType() {
-            return SolrRequestType.UNSPECIFIED.toString();
         }
 
         @Override
@@ -141,8 +137,10 @@ public abstract class RewriterConfigRequestBuilder {
         }
 
         @Override
-        protected SaveRewriterConfigSolrResponse createResponse(final SolrClient client) {
-            return new SaveRewriterConfigSolrResponse();
+        protected SaveRewriterConfigSolrResponse createResponse(final NamedList<Object> namedList) {
+            final SaveRewriterConfigSolrResponse response = new SaveRewriterConfigSolrResponse();
+            response.setResponse(namedList);
+            return response;
         }
 
         @Override
@@ -166,12 +164,8 @@ public abstract class RewriterConfigRequestBuilder {
     public static class DeleteRewriterConfigSolrRequest extends SolrRequest<DeleteRewriterConfigSolrSolrResponse> {
 
         public DeleteRewriterConfigSolrRequest(final String requestHandlerName, final String rewriterId) {
-            super(SolrRequest.METHOD.POST, requestHandlerName + "/" + rewriterId);
-        }
-
-        @Override
-        public String getRequestType() {
-            return SolrRequestType.UNSPECIFIED.toString();
+            super(SolrRequest.METHOD.POST, requestHandlerName + "/" + rewriterId,
+                    SolrRequest.SolrRequestType.UNSPECIFIED);
         }
 
         @Override
@@ -185,8 +179,10 @@ public abstract class RewriterConfigRequestBuilder {
         }
 
         @Override
-        protected DeleteRewriterConfigSolrSolrResponse createResponse(final SolrClient client) {
-            return new DeleteRewriterConfigSolrSolrResponse();
+        protected DeleteRewriterConfigSolrSolrResponse createResponse(final NamedList<Object> namedList) {
+            final DeleteRewriterConfigSolrSolrResponse response = new DeleteRewriterConfigSolrSolrResponse();
+            response.setResponse(namedList);
+            return response;
         }
 
     }
@@ -194,12 +190,13 @@ public abstract class RewriterConfigRequestBuilder {
     public static class GetRewriterConfigSolrRequest extends SolrRequest<GetRewriterConfigSolrResponse> {
 
         public GetRewriterConfigSolrRequest(final String requestHandlerName, final String rewriterId) {
-            super(SolrRequest.METHOD.GET, requestHandlerName + (rewriterId != null ? ("/" + rewriterId) : ""));
+            super(SolrRequest.METHOD.GET, requestHandlerName + (rewriterId != null ? ("/" + rewriterId) : ""),
+                    SolrRequest.SolrRequestType.UNSPECIFIED);
         }
 
         @Override
-        public String getRequestType() {
-            return SolrRequestType.UNSPECIFIED.toString();
+        public boolean requiresCollection() {
+            return true;
         }
 
         @Override
@@ -208,8 +205,10 @@ public abstract class RewriterConfigRequestBuilder {
         }
 
         @Override
-        protected GetRewriterConfigSolrResponse createResponse(final SolrClient client) {
-            return new GetRewriterConfigSolrResponse();
+        protected GetRewriterConfigSolrResponse createResponse(final NamedList<Object> namedList) {
+            final GetRewriterConfigSolrResponse response = new GetRewriterConfigSolrResponse();
+            response.setResponse(namedList);
+            return response;
         }
 
     }
@@ -217,12 +216,12 @@ public abstract class RewriterConfigRequestBuilder {
     public static class ListRewriterConfigsSolrRequest extends SolrRequest<ListRewriterConfigsSolrResponse> {
 
         public ListRewriterConfigsSolrRequest(final String requestHandlerName) {
-            super(SolrRequest.METHOD.GET, requestHandlerName);
+            super(SolrRequest.METHOD.GET, requestHandlerName, SolrRequest.SolrRequestType.UNSPECIFIED);
         }
 
         @Override
-        public String getRequestType() {
-            return SolrRequestType.UNSPECIFIED.toString();
+        public boolean requiresCollection() {
+            return true;
         }
 
         @Override
@@ -231,8 +230,10 @@ public abstract class RewriterConfigRequestBuilder {
         }
 
         @Override
-        protected ListRewriterConfigsSolrResponse createResponse(final SolrClient client) {
-            return new ListRewriterConfigsSolrResponse();
+        protected ListRewriterConfigsSolrResponse createResponse(final NamedList<Object> namedList) {
+            final ListRewriterConfigsSolrResponse response = new ListRewriterConfigsSolrResponse();
+            response.setResponse(namedList);
+            return response;
         }
     }
 

@@ -5,6 +5,8 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.*;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST;
+import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_ALWAYS_ADD_REVERSE_COMPOUNDS;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND;
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_DECOMPOUND_MAX_EXPANSIONS;
@@ -19,7 +21,7 @@ import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CO
 import static querqy.solr.rewriter.wordbreak.WordBreakCompoundRewriterFactory.CONF_REVERSE_COMPOUND_TRIGGER_WORDS;
 
 import org.junit.Test;
-import querqy.lucene.contrib.rewrite.wordbreak.SuffixGroupMorphology;
+import querqy.rewriter.wordbreak.SuffixGroupMorphology;
 
 import java.util.List;
 import java.util.Map;
@@ -112,5 +114,39 @@ public class WordBreakCompoundConfigRequestBuilderTest {
         assertThat(reverseCompoundTriggerWords, contains("from", "of"));
 
 
+    }
+
+    @Test
+    public void testOptionalModifierProperties() {
+        final Map<String, Object> config = new WordBreakCompoundConfigRequestBuilder()
+                .dictionaryField("f1")
+                .optionalModifierPosition(querqy.rewriter.wordbreak.OptionalModifierPosition.FIRST)
+                .optionalModifierBoost(2f)
+                .buildConfig();
+
+        final List<String> errors = new WordBreakCompoundRewriterFactory("id").validateConfiguration(config);
+        assertTrue(errors == null || errors.isEmpty());
+
+        final Map<String, Object> decompound = (Map<String, Object>) config.get(CONF_DECOMPOUND);
+        assertThat(decompound, hasEntry(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "FIRST"));
+        assertThat(decompound, hasEntry(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, 2f));
+    }
+
+    @Test
+    public void testThatOptionalModifierPositionCanBeSetByName() {
+        final Map<String, Object> config = new WordBreakCompoundConfigRequestBuilder()
+                .dictionaryField("f1").optionalModifierPosition("last").buildConfig();
+        assertThat((Map<String, Object>) config.get(CONF_DECOMPOUND),
+                hasEntry(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "LAST"));
+    }
+
+    @Test
+    public void testThatUnknownOptionalModifierPositionIsRejected() {
+        try {
+            new WordBreakCompoundConfigRequestBuilder().dictionaryField("f1").optionalModifierPosition("MIDDLE");
+            fail("Unknown position must not be allowed");
+        } catch (final IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("optionalModifierPosition"));
+        }
     }
 }

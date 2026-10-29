@@ -2,13 +2,19 @@ package querqy.solr.rewriter.wordbreak;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.request.SolrRequestInfo;
-import querqy.lucene.contrib.rewrite.wordbreak.Morphology;
-import querqy.lucene.contrib.rewrite.wordbreak.MorphologyProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import querqy.rewriter.wordbreak.Morphology;
+import querqy.rewriter.wordbreak.MorphologyProvider;
+import querqy.rewriter.wordbreak.OptionalModifierConfig;
+import querqy.rewriter.wordbreak.OptionalModifierPosition;
 import querqy.rewrite.RewriterFactory;
+import querqy.lucene.LuceneTermCorpus;
 import querqy.solr.SolrRewriterFactoryAdapter;
 import querqy.solr.rewriter.ClassicConfigurationParser;
 import querqy.solr.utils.ConfigUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +23,14 @@ import java.util.function.Supplier;
 
 public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter implements ClassicConfigurationParser {
 
+    private static final Logger LOG = LoggerFactory.getLogger(WordBreakCompoundRewriterFactory.class);
+
     public static final String CONF_DICTIONARY_FIELD = "dictionaryField";
     public static final String CONF_MIN_SUGGESTION_FREQ = "minSuggestionFrequency";
+    /**
+     * @deprecated Ignored since querqy-core 4, which no longer limits the length of combined terms.
+     */
+    @Deprecated
     public static final String CONF_MAX_COMBINE_WORD_LENGTH = "maxCombineWordLength";
     public static final String CONF_MIN_BREAK_LENGTH = "minBreakLength";
     public static final String CONF_LOWER_CASE_INPUT = "lowerCaseInput";
@@ -28,18 +40,21 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
     public static final String CONF_DECOMPOUND = "decompound";
     public static final String CONF_DECOMPOUND_MAX_EXPANSIONS = "maxExpansions";
     public static final String CONF_DECOMPOUND_VERIFY_COLLATION = "verifyCollation";
+    public static final String CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION = "optionalModifierPosition";
+    public static final String CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST = "optionalModifierBoost";
     public static final String CONF_COMPOUND = "compound";
     public static final String CONF_PROTECTED_WORDS = "protectedWords";
 
 
     private static final int DEFAULT_MIN_SUGGESTION_FREQ = 1;
-    private static final int DEFAULT_MAX_COMBINE_WORD_LENGTH = 30;
     private static final int DEFAULT_MIN_BREAK_LENGTH = 3;
     private static final int DEFAULT_MAX_DECOMPOUND_EXPANSIONS = 3;
     private static final boolean DEFAULT_VERIFY_DECOMPOUND_COLLATION = false;
+    private static final String DEFAULT_OPTIONAL_MODIFIER_POSITION = OptionalModifierPosition.NONE.name();
+    private static final float DEFAULT_OPTIONAL_MODIFIER_BOOST = 1f;
 
 
-    private querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory delegate = null;
+    private querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory delegate = null;
     private final MorphologyProvider morphologyProvider;
 
     public WordBreakCompoundRewriterFactory(final String rewriterId) {
@@ -54,9 +69,11 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
         final Integer minSuggestionFreq = ConfigUtils.getArg(config, CONF_MIN_SUGGESTION_FREQ,
                 DEFAULT_MIN_SUGGESTION_FREQ);
 
-        // the maximum length of a combined term
-        final Integer maxCombineLength = ConfigUtils.getArg(config, CONF_MAX_COMBINE_WORD_LENGTH,
-                DEFAULT_MAX_COMBINE_WORD_LENGTH);
+        if (config.containsKey(CONF_MAX_COMBINE_WORD_LENGTH)) {
+            LOG.warn("Rewriter {}: configuration property '{}' is deprecated and ignored. The word break compound " +
+                    "rewriter of querqy-core 4 no longer limits the length of combined terms.", rewriterId,
+                    CONF_MAX_COMBINE_WORD_LENGTH);
+        }
 
         // the minimum break term length
         final Integer minBreakLength = ConfigUtils.getArg(config, CONF_MIN_BREAK_LENGTH, DEFAULT_MIN_BREAK_LENGTH);
@@ -84,6 +101,9 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
                     + maxDecompoundExpansions);
         }
 
+        // validates the position/boost combination
+        final OptionalModifierConfig optionalModifierConfig = parseOptionalModifierConfig(decompoundConf);
+
         // define whether we should always try to add a reverse compound
         final boolean alwaysAddReverseCompounds = ConfigUtils.getArg(config, CONF_ALWAYS_ADD_REVERSE_COMPOUNDS,
                 Boolean.FALSE);
@@ -102,10 +122,11 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
         // for backwards compatibility, compoundMorphology uses DEFAULT unless explicitly overridden
         final String compoundMorphologyName = ConfigUtils.getArg(compoundConf, CONF_MORPHOLOGY, "DEFAULT");
 
-        delegate = new querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory(rewriterId,
-                indexReaderSupplier, indexField, lowerCaseInput, minSuggestionFreq, maxCombineLength,
+        delegate = new querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory(rewriterId,
+                new LuceneTermCorpus(indexReaderSupplier, indexField), lowerCaseInput, minSuggestionFreq,
                 minBreakLength, reverseCompoundTriggerWords, alwaysAddReverseCompounds, maxDecompoundExpansions,
-                verifyDecompoundCollation, protectedWords, decompoundMorphologyName, compoundMorphologyName);
+                verifyDecompoundCollation, protectedWords, decompoundMorphologyName, compoundMorphologyName,
+                optionalModifierConfig.position().name(), optionalModifierConfig.boost());
     }
 
     @Override
@@ -123,6 +144,12 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
 
         if (decompoundConf.get(CONF_MORPHOLOGY) != null && !morphologyProvider.exists((String) decompoundConf.get(CONF_MORPHOLOGY))) {
             return Collections.singletonList("Cannot load decompound morphology: " + decompoundConf.get("morphology"));
+        }
+
+        try {
+            parseOptionalModifierConfig(decompoundConf);
+        } catch (final IllegalArgumentException e) {
+            return Collections.singletonList("Invalid decompound optional modifier configuration: " + e.getMessage());
         }
 
         final Map<String, Object> compoundConf = ConfigUtils.getArg(config, "compound", Collections.emptyMap());
@@ -145,6 +172,37 @@ public class WordBreakCompoundRewriterFactory extends SolrRewriterFactoryAdapter
                 .filter(s -> !s.isEmpty());
         // TODO: can we validate the dictionary field against the schema?
         return optValue.isPresent() ? null : Collections.singletonList("Missing config:  dictionaryField");
+    }
+
+    /**
+     * Reads the optional modifier settings from the 'decompound' configuration.
+     *
+     * @throws IllegalArgumentException if the position is unknown, the boost is not a number or the combination of
+     * position and boost is invalid
+     */
+    private static OptionalModifierConfig parseOptionalModifierConfig(final Map<String, Object> decompoundConf) {
+
+        final Object positionValue = decompoundConf.getOrDefault(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION,
+                DEFAULT_OPTIONAL_MODIFIER_POSITION);
+        final String positionName = positionValue == null ? "" : positionValue.toString().trim();
+        final OptionalModifierPosition position;
+        try {
+            position = positionName.isEmpty()
+                    ? OptionalModifierPosition.NONE
+                    : OptionalModifierPosition.valueOf(positionName.toUpperCase());
+        } catch (final IllegalArgumentException e) {
+            throw new IllegalArgumentException("No such " + CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION + ": "
+                    + positionName + ". Valid values: " + Arrays.toString(OptionalModifierPosition.values()));
+        }
+
+        final Object boostValue = decompoundConf.getOrDefault(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST,
+                DEFAULT_OPTIONAL_MODIFIER_BOOST);
+        if (!(boostValue instanceof Number)) {
+            throw new IllegalArgumentException(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST + " must be a number but was: "
+                    + boostValue);
+        }
+
+        return new OptionalModifierConfig(position, ((Number) boostValue).floatValue());
     }
 
     @Override

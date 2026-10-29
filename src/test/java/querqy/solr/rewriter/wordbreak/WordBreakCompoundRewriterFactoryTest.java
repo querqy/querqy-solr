@@ -43,7 +43,7 @@ public class WordBreakCompoundRewriterFactoryTest {
 
         RewriterFactory rewriterFactory = factory.getRewriterFactory();
 
-        assertThat(rewriterFactory).isInstanceOf(querqy.lucene.contrib.rewrite.wordbreak.WordBreakCompoundRewriterFactory.class);
+        assertThat(rewriterFactory).isInstanceOf(querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory.class);
         assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNull();
     }
 
@@ -74,5 +74,51 @@ public class WordBreakCompoundRewriterFactoryTest {
         validations = factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG));
         assertThat(validations).isNotNull();
         assertThat(validations).containsOnly("Cannot load compound morphology: INVALID");
+    }
+
+    @Test
+    public void testParseOptionalModifierConfiguration() {
+        final NamedList<Object> configuration = new NamedList<>();
+        configuration.add(CONF_CLASS, WordBreakCompoundRewriterFactory.class.getName());
+        configuration.add(CONF_DICTIONARY_FIELD, "f1");
+        configuration.add(CONF_DECOMPOUND + "." + CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "first");
+        configuration.add(CONF_DECOMPOUND + "." + CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, 2.5f);
+
+        final Map<String, Object> parsed = factory.parseConfigurationToRequestHandlerBody(configuration,
+                resourceLoader);
+        assertThat(factory.validateConfiguration((Map<String, Object>) parsed.get(CONF_CONFIG))).isNull();
+        factory.configure((Map<String, Object>) parsed.get(CONF_CONFIG));
+
+        final querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory delegate =
+                (querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory) factory.getRewriterFactory();
+        assertThat(delegate.getOptionalModifierConfig().position())
+                .isEqualTo(querqy.rewriter.wordbreak.OptionalModifierPosition.FIRST);
+        assertThat(delegate.getOptionalModifierConfig().boost()).isEqualTo(2.5f);
+    }
+
+    @Test
+    public void testOptionalModifierDefaultsToNone() {
+        factory.configure(Map.of(CONF_DICTIONARY_FIELD, "f1"));
+        final querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory delegate =
+                (querqy.rewriter.wordbreak.WordBreakCompoundRewriterFactory) factory.getRewriterFactory();
+        assertThat(delegate.getOptionalModifierConfig())
+                .isEqualTo(querqy.rewriter.wordbreak.OptionalModifierConfig.DISABLED);
+    }
+
+    @Test
+    public void testInvalidOptionalModifierConfigurationIsInvalid() {
+        assertThat(factory.validateConfiguration(Map.of(CONF_DICTIONARY_FIELD, "f1",
+                CONF_DECOMPOUND, Map.of(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "MIDDLE"))))
+                .singleElement().asString().contains(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "MIDDLE");
+
+        // a boost needs a position
+        assertThat(factory.validateConfiguration(Map.of(CONF_DICTIONARY_FIELD, "f1",
+                CONF_DECOMPOUND, Map.of(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, 2f))))
+                .singleElement().asString().contains("optionalModifierBoost");
+
+        assertThat(factory.validateConfiguration(Map.of(CONF_DICTIONARY_FIELD, "f1",
+                CONF_DECOMPOUND, Map.of(CONF_DECOMPOUND_OPTIONAL_MODIFIER_POSITION, "FIRST",
+                        CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, "high"))))
+                .singleElement().asString().contains(CONF_DECOMPOUND_OPTIONAL_MODIFIER_BOOST, "number");
     }
 }
