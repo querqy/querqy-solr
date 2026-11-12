@@ -66,7 +66,7 @@
         <querqy-lucene.version>5.13.lucene1050.1</querqy-lucene.version>
 
         <commons.io.version>2.22.0</commons.io.version>
-        <minidev.json-smart.version>2.6.0</minidev.json-smart.version>
+        <minidev.json-smart.version>2.6.1</minidev.json-smart.version>
         <log4j.version>2.26.1</log4j.version>
         <slf4j.version>2.0.18</slf4j.version>
         <solr.version>10.1.0</solr.version>
